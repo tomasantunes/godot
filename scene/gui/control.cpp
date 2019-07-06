@@ -29,23 +29,23 @@
 /*************************************************************************/
 
 #include "control.h"
-#include "core/project_settings.h"
-#include "scene/main/canvas_layer.h"
-#include "scene/main/viewport.h"
-#include "servers/visual_server.h"
 
 #include "core/message_queue.h"
 #include "core/os/keyboard.h"
 #include "core/os/os.h"
 #include "core/print_string.h"
+#include "core/project_settings.h"
 #include "scene/gui/label.h"
 #include "scene/gui/panel.h"
+#include "scene/main/canvas_layer.h"
+#include "scene/main/viewport.h"
 #include "scene/scene_string_names.h"
+#include "servers/visual_server.h"
+
 #ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
 #include "editor/plugins/canvas_item_editor_plugin.h"
 #endif
-#include <stdio.h>
 
 Dictionary Control::_edit_get_state() const {
 
@@ -1042,55 +1042,37 @@ int Control::get_constant(const StringName &p_name, const StringName &p_type) co
 bool Control::has_icon_override(const StringName &p_name) const {
 
 	const Ref<Texture> *tex = data.icon_override.getptr(p_name);
-	if (tex)
-		return true;
-	else
-		return false;
+	return tex != NULL;
 }
 
 bool Control::has_shader_override(const StringName &p_name) const {
 
 	const Ref<Shader> *sdr = data.shader_override.getptr(p_name);
-	if (sdr)
-		return true;
-	else
-		return false;
+	return sdr != NULL;
 }
 
 bool Control::has_stylebox_override(const StringName &p_name) const {
 
 	const Ref<StyleBox> *style = data.style_override.getptr(p_name);
-	if (style)
-		return true;
-	else
-		return false;
+	return style != NULL;
 }
 
 bool Control::has_font_override(const StringName &p_name) const {
 
 	const Ref<Font> *font = data.font_override.getptr(p_name);
-	if (font)
-		return true;
-	else
-		return false;
+	return font != NULL;
 }
 
 bool Control::has_color_override(const StringName &p_name) const {
 
 	const Color *color = data.color_override.getptr(p_name);
-	if (color)
-		return true;
-	else
-		return false;
+	return color != NULL;
 }
 
 bool Control::has_constant_override(const StringName &p_name) const {
 
 	const int *constant = data.constant_override.getptr(p_name);
-	if (constant)
-		return true;
-	else
-		return false;
+	return constant != NULL;
 }
 
 bool Control::has_icon(const StringName &p_name, const StringName &p_type) const {
@@ -1749,6 +1731,9 @@ Rect2 Control::_compute_child_rect(const float p_anchors[4], const float p_margi
 void Control::_compute_anchors(Rect2 p_rect, const float p_margins[4], float (&r_anchors)[4]) {
 
 	Size2 parent_rect_size = get_parent_anchorable_rect().size;
+	ERR_FAIL_COND(parent_rect_size.x == 0.0);
+	ERR_FAIL_COND(parent_rect_size.y == 0.0);
+
 	r_anchors[0] = (p_rect.position.x - p_margins[0]) / parent_rect_size.x;
 	r_anchors[1] = (p_rect.position.y - p_margins[1]) / parent_rect_size.y;
 	r_anchors[2] = (p_rect.position.x + p_rect.size.x - p_margins[2]) / parent_rect_size.x;
@@ -1994,10 +1979,7 @@ Control *Control::find_next_valid_focus() const {
 			break;
 		}
 
-		if (next_child) {
-
-			from = next_child;
-		} else {
+		if (!next_child) {
 
 			next_child = _next_control(from);
 			if (!next_child) { //nothing else.. go up and find either window or subwindow
@@ -2267,6 +2249,7 @@ Ref<Theme> Control::get_theme() const {
 void Control::set_tooltip(const String &p_tooltip) {
 
 	data.tooltip = p_tooltip;
+	update_configuration_warning();
 }
 
 String Control::get_tooltip(const Point2 &p_pos) const {
@@ -2558,6 +2541,7 @@ void Control::set_mouse_filter(MouseFilter p_filter) {
 
 	ERR_FAIL_INDEX(p_filter, 3);
 	data.mouse_filter = p_filter;
+	update_configuration_warning();
 }
 
 Control::MouseFilter Control::get_mouse_filter() const {
@@ -2721,6 +2705,20 @@ void Control::get_argument_options(const StringName &p_function, int p_idx, List
 		}
 	}
 }
+
+String Control::get_configuration_warning() const {
+	String warning = CanvasItem::get_configuration_warning();
+
+	if (data.mouse_filter == MOUSE_FILTER_IGNORE && data.tooltip != "") {
+		if (warning != String()) {
+			warning += "\n";
+		}
+		warning += TTR("The Hint Tooltip won't be displayed as the control's Mouse Filter is set to \"Ignore\". To solve this, set the Mouse Filter to \"Stop\" or \"Pass\".");
+	}
+
+	return warning;
+}
+
 void Control::set_clip_contents(bool p_clip) {
 
 	data.clip_contents = p_clip;

@@ -46,7 +46,7 @@
 #ifdef TOOLS_ENABLED
 class VisualScriptEditorSignalEdit : public Object {
 
-	GDCLASS(VisualScriptEditorSignalEdit, Object)
+	GDCLASS(VisualScriptEditorSignalEdit, Object);
 
 	StringName sig;
 
@@ -186,7 +186,7 @@ public:
 
 class VisualScriptEditorVariableEdit : public Object {
 
-	GDCLASS(VisualScriptEditorVariableEdit, Object)
+	GDCLASS(VisualScriptEditorVariableEdit, Object);
 
 	StringName var;
 
@@ -1099,6 +1099,9 @@ void VisualScriptEditor::_expression_text_changed(const String &p_text, int p_id
 
 void VisualScriptEditor::_available_node_doubleclicked() {
 
+	if (edited_func == String())
+		return;
+
 	TreeItem *item = nodes->get_selected();
 
 	if (!item)
@@ -1107,7 +1110,6 @@ void VisualScriptEditor::_available_node_doubleclicked() {
 	String which = item->get_metadata(0);
 	if (which == String())
 		return;
-
 	Vector2 ofs = graph->get_scroll_ofs() + graph->get_size() * 0.5;
 
 	if (graph->is_using_snap()) {
@@ -2109,6 +2111,9 @@ void VisualScriptEditor::clear_executing_line() {
 }
 
 void VisualScriptEditor::trim_trailing_whitespace() {
+}
+
+void VisualScriptEditor::insert_final_newline() {
 }
 
 void VisualScriptEditor::convert_indent_to_spaces() {
@@ -3755,5 +3760,8 @@ void _VisualScriptEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_custom_node", "name", "category", "script"), &_VisualScriptEditor::add_custom_node);
 	ClassDB::bind_method(D_METHOD("remove_custom_node", "name", "category"), &_VisualScriptEditor::remove_custom_node);
 	ADD_SIGNAL(MethodInfo("custom_nodes_updated"));
+}
+
+void VisualScriptEditor::validate() {
 }
 #endif

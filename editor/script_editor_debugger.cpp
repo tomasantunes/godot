@@ -305,49 +305,51 @@ void ScriptEditorDebugger::_scene_tree_rmb_selected(const Vector2 &p_position) {
 }
 
 void ScriptEditorDebugger::_file_selected(const String &p_file) {
-	if (file_dialog_mode == SAVE_NODE) {
+	switch (file_dialog_mode) {
+		case SAVE_NODE: {
+			Array msg;
+			msg.push_back("save_node");
+			msg.push_back(inspected_object_id);
+			msg.push_back(p_file);
+			ppeer->put_var(msg);
+		} break;
+		case SAVE_CSV: {
+			Error err;
+			FileAccessRef file = FileAccess::open(p_file, FileAccess::WRITE, &err);
 
-		Array msg;
-		msg.push_back("save_node");
-		msg.push_back(inspected_object_id);
-		msg.push_back(p_file);
-		ppeer->put_var(msg);
-	} else if (file_dialog_mode == SAVE_CSV) {
+			if (err != OK) {
+				ERR_PRINTS("Failed to open " + p_file);
+				return;
+			}
+			Vector<String> line;
+			line.resize(Performance::MONITOR_MAX);
 
-		Error err;
-		FileAccessRef file = FileAccess::open(p_file, FileAccess::WRITE, &err);
-
-		if (err != OK) {
-			ERR_PRINTS("Failed to open " + p_file);
-			return;
-		}
-		Vector<String> line;
-		line.resize(Performance::MONITOR_MAX);
-
-		// signatures
-		for (int i = 0; i < Performance::MONITOR_MAX; i++) {
-			line.write[i] = Performance::get_singleton()->get_monitor_name(Performance::Monitor(i));
-		}
-		file->store_csv_line(line);
-
-		// values
-		List<Vector<float> >::Element *E = perf_history.back();
-		while (E) {
-
-			Vector<float> &perf_data = E->get();
-			for (int i = 0; i < perf_data.size(); i++) {
-
-				line.write[i] = String::num_real(perf_data[i]);
+			// signatures
+			for (int i = 0; i < Performance::MONITOR_MAX; i++) {
+				line.write[i] = Performance::get_singleton()->get_monitor_name(Performance::Monitor(i));
 			}
 			file->store_csv_line(line);
-			E = E->prev();
-		}
-		file->store_string("\n");
 
-		Vector<Vector<String> > profiler_data = profiler->get_data_as_csv();
-		for (int i = 0; i < profiler_data.size(); i++) {
-			file->store_csv_line(profiler_data[i]);
-		}
+			// values
+			List<Vector<float> >::Element *E = perf_history.back();
+			while (E) {
+
+				Vector<float> &perf_data = E->get();
+				for (int i = 0; i < perf_data.size(); i++) {
+
+					line.write[i] = String::num_real(perf_data[i]);
+				}
+				file->store_csv_line(line);
+				E = E->prev();
+			}
+			file->store_string("\n");
+
+			Vector<Vector<String> > profiler_data = profiler->get_data_as_csv();
+			for (int i = 0; i < profiler_data.size(); i++) {
+				file->store_csv_line(profiler_data[i]);
+			}
+
+		} break;
 	}
 }
 
@@ -624,8 +626,7 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 			d["frame"] = i;
 			s->set_metadata(0, d);
 
-			//String line = itos(i)+" - "+String(d["file"])+":"+itos(d["line"])+" - at func: "+d["function"];
-			String line = itos(i) + " - " + String(d["file"]) + ":" + itos(d["line"]);
+			String line = itos(i) + " - " + String(d["file"]) + ":" + itos(d["line"]) + " - at function: " + d["function"];
 			s->set_text(0, line);
 
 			if (i == 0)
@@ -727,20 +728,8 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 				String tt = vs;
 				switch (Performance::MonitorType((int)perf_items[i]->get_metadata(1))) {
 					case Performance::MONITOR_TYPE_MEMORY: {
-						// for the time being, going above GBs is a bad sign.
-						String unit = "B";
-						if ((int)v > 1073741824) {
-							unit = "GB";
-							v /= 1073741824.0;
-						} else if ((int)v > 1048576) {
-							unit = "MB";
-							v /= 1048576.0;
-						} else if ((int)v > 1024) {
-							unit = "KB";
-							v /= 1024.0;
-						}
-						tt += " bytes";
-						vs = String::num(v, 2) + " " + unit;
+						vs = String::humanize_size(v);
+						tt = vs;
 					} break;
 					case Performance::MONITOR_TYPE_TIME: {
 						tt += " seconds";
@@ -1025,7 +1014,9 @@ void ScriptEditorDebugger::_performance_draw() {
 		int pi = which[i];
 		Color c = get_color("accent_color", "Editor");
 		float h = (float)which[i] / (float)(perf_items.size());
-		c.set_hsv(Math::fmod(h + 0.4, 0.9), c.get_s() * 0.9, c.get_v() * 1.4);
+		// Use a darker color on light backgrounds for better visibility
+		float value_multiplier = EditorSettings::get_singleton()->is_dark_theme() ? 1.4 : 0.55;
+		c.set_hsv(Math::fmod(h + 0.4, 0.9), c.get_s() * 0.9, c.get_v() * value_multiplier);
 
 		c.a = 0.6;
 		perf_draw->draw_string(graph_font, r.position + Point2(0, graph_font->get_ascent()), perf_items[pi]->get_text(0), c, r.size.x);
@@ -1045,9 +1036,8 @@ void ScriptEditorDebugger::_performance_draw() {
 			float h2 = E->get()[pi] / m;
 			h2 = (1.0 - h2) * r.size.y;
 
-			c.a = 0.7;
 			if (E != perf_history.front())
-				perf_draw->draw_line(r.position + Point2(from, h2), r.position + Point2(from + spacing, prev), c, 2.0);
+				perf_draw->draw_line(r.position + Point2(from, h2), r.position + Point2(from + spacing, prev), c, Math::round(EDSCALE), true);
 			prev = h2;
 			E = E->next();
 			from -= spacing;
@@ -1132,10 +1122,13 @@ void ScriptEditorDebugger::_notification(int p_what) {
 				last_warning_count = warning_count;
 			}
 
-			if (connection.is_null()) {
-
-				if (server->is_connection_available()) {
-
+			if (server->is_connection_available()) {
+				if (connection.is_valid()) {
+					// We already have a valid connection. Disconnecting any new connecting client to prevent it from hanging.
+					// (If we don't keep a reference to the connection it will be destroyed and disconnect_from_host will be called internally)
+					server->take_connection();
+				} else {
+					// We just got the first connection.
 					connection = server->take_connection();
 					if (connection.is_null())
 						break;
@@ -1169,12 +1162,11 @@ void ScriptEditorDebugger::_notification(int p_what) {
 					if (profiler->is_profiling()) {
 						_profiler_activate(true);
 					}
-
-				} else {
-
-					break;
 				}
-			};
+			}
+
+			if (connection.is_null())
+				break;
 
 			if (!connection->is_connected_to_host()) {
 				stop();

@@ -599,6 +599,10 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 			auto_build_solutions = true;
 			editor = true;
+		} else if (I->get() == "--export" || I->get() == "--export-debug") { // Export project
+
+			editor = true;
+			main_args.push_back(I->get());
 #endif
 		} else if (I->get() == "--path") { // set path of project to start or edit
 
@@ -812,7 +816,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			int sp = bp.find_last(":");
 			if (sp == -1) {
 				ERR_EXPLAIN("Invalid breakpoint: '" + bp + "', expected file:line format.");
-				ERR_CONTINUE(sp == -1);
+				ERR_CONTINUE(true);
 			}
 
 			script_debugger->insert_breakpoint(bp.substr(sp + 1, bp.length()).to_int(), bp.substr(0, sp));
@@ -939,7 +943,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
 	video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
-	video_mode.layered_splash = GLOBAL_DEF("display/window/per_pixel_transparency/splash", false);
 
 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation", 2);
 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation.mobile", 3);
@@ -1021,6 +1024,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 
 	Engine::get_singleton()->set_iterations_per_second(GLOBAL_DEF("physics/common/physics_fps", 60));
+	ProjectSettings::get_singleton()->set_custom_property_info("physics/common/physics_fps", PropertyInfo(Variant::INT, "physics/common/physics_fps", PROPERTY_HINT_RANGE, "1,120,1,or_greater"));
 	Engine::get_singleton()->set_physics_jitter_fix(GLOBAL_DEF("physics/common/physics_jitter_fix", 0.5));
 	Engine::get_singleton()->set_target_fps(GLOBAL_DEF("debug/settings/fps/force_fps", 0));
 	ProjectSettings::get_singleton()->set_custom_property_info("debug/settings/fps/force_fps", PropertyInfo(Variant::INT, "debug/settings/fps/force_fps", PROPERTY_HINT_RANGE, "0,120,1,or_greater"));
@@ -1104,6 +1108,8 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 		return err;
 	}
 
+	print_line(" "); //add a blank line for readability
+
 	if (init_use_custom_pos) {
 		OS::get_singleton()->set_window_position(init_custom_pos);
 	}
@@ -1154,6 +1160,7 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 	if (show_logo) { //boot logo!
 		String boot_logo_path = GLOBAL_DEF("application/boot_splash/image", String());
 		bool boot_logo_scale = GLOBAL_DEF("application/boot_splash/fullsize", true);
+		bool boot_logo_filter = GLOBAL_DEF("application/boot_splash/use_filter", true);
 		ProjectSettings::get_singleton()->set_custom_property_info("application/boot_splash/image", PropertyInfo(Variant::STRING, "application/boot_splash/image", PROPERTY_HINT_FILE, "*.png"));
 
 		Ref<Image> boot_logo;
@@ -1170,7 +1177,7 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 		Color boot_bg_color = GLOBAL_DEF("application/boot_splash/bg_color", boot_splash_bg_color);
 		if (boot_logo.is_valid()) {
 			OS::get_singleton()->_msec_splash = OS::get_singleton()->get_ticks_msec();
-			VisualServer::get_singleton()->set_boot_image(boot_logo, boot_bg_color, boot_logo_scale);
+			VisualServer::get_singleton()->set_boot_image(boot_logo, boot_bg_color, boot_logo_scale, boot_logo_filter);
 
 		} else {
 #ifndef NO_DEFAULT_BOOT_LOGO
@@ -1340,20 +1347,10 @@ bool Main::start() {
 					removal_docs.push_back(args[j]);
 			} else if (args[i] == "--export") {
 				editor = true; //needs editor
-				if (i + 1 < args.size()) {
-					_export_preset = args[i + 1];
-				} else {
-					ERR_PRINT("Export preset name not specified");
-					return false;
-				}
+				_export_preset = args[i + 1];
 			} else if (args[i] == "--export-debug") {
 				editor = true; //needs editor
-				if (i + 1 < args.size()) {
-					_export_preset = args[i + 1];
-				} else {
-					ERR_PRINT("Export preset name not specified");
-					return false;
-				}
+				_export_preset = args[i + 1];
 				export_debug = true;
 #endif
 			} else {
@@ -1371,6 +1368,8 @@ bool Main::start() {
 	String main_loop_type;
 #ifdef TOOLS_ENABLED
 	if (doc_tool != "") {
+
+		Engine::get_singleton()->set_editor_hint(true); // Needed to instance editor-only classes for their default values
 
 		{
 			DirAccessRef da = DirAccess::open(doc_tool);
@@ -1466,7 +1465,7 @@ bool Main::start() {
 				if (obj)
 					memdelete(obj);
 				ERR_EXPLAIN("Can't load script '" + script + "', it does not inherit from a MainLoop type");
-				ERR_FAIL_COND_V(!script_loop, false);
+				ERR_FAIL_V(false);
 			}
 
 			script_loop->set_init_script(script_res);
@@ -1710,13 +1709,13 @@ bool Main::start() {
 
 						if (sep == -1) {
 							DirAccess *da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-							local_game_path = da->get_current_dir() + "/" + local_game_path;
+							local_game_path = da->get_current_dir().plus_file(local_game_path);
 							memdelete(da);
 						} else {
 
 							DirAccess *da = DirAccess::open(local_game_path.substr(0, sep));
 							if (da) {
-								local_game_path = da->get_current_dir() + "/" + local_game_path.substr(sep + 1, local_game_path.length());
+								local_game_path = da->get_current_dir().plus_file(local_game_path.substr(sep + 1, local_game_path.length()));
 								memdelete(da);
 							}
 						}
@@ -1754,7 +1753,7 @@ bool Main::start() {
 					scene = scenedata->instance();
 
 				ERR_EXPLAIN("Failed loading scene: " + local_game_path);
-				ERR_FAIL_COND_V(!scene, false)
+				ERR_FAIL_COND_V(!scene, false);
 				sml->add_current_scene(scene);
 
 #ifdef OSX_ENABLED
@@ -1794,6 +1793,7 @@ bool Main::start() {
 			pmanager->add_child(progress_dialog);
 			sml->get_root()->add_child(pmanager);
 			OS::get_singleton()->set_context(OS::CONTEXT_PROJECTMAN);
+			project_manager = true;
 		}
 
 		if (project_manager || editor) {
@@ -1803,6 +1803,10 @@ bool Main::start() {
 				StreamPeerSSL::load_certs_from_file(certs);
 			else
 				StreamPeerSSL::load_certs_from_memory(StreamPeerSSL::get_project_cert_array());
+
+			// Hide console window if requested (Windows-only)
+			bool hide_console = EditorSettings::get_singleton()->get_setting("interface/editor/hide_console_window");
+			OS::get_singleton()->set_console_visible(!hide_console);
 		}
 #endif
 	}

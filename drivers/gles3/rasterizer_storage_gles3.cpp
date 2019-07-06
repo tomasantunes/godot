@@ -1173,7 +1173,7 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 			glDeleteFramebuffers(1, &tmp_fbo);
 		}
 
-		wb = PoolVector<uint8_t>::Write();
+		wb.release();
 
 		data.resize(data_size);
 
@@ -1248,11 +1248,11 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 		img_format = real_format;
 	}
 
-	wb = PoolVector<uint8_t>::Write();
+	wb.release();
 
 	data.resize(data_size);
 
-	Image *img = memnew(Image(texture->alloc_width, texture->alloc_height, texture->mipmaps > 1 ? true : false, img_format, data));
+	Image *img = memnew(Image(texture->alloc_width, texture->alloc_height, texture->mipmaps > 1, img_format, data));
 
 	return Ref<Image>(img);
 #else
@@ -1316,7 +1316,7 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDeleteFramebuffers(1, &temp_framebuffer);
 
-	wb = PoolVector<uint8_t>::Write();
+	wb.release();
 
 	data.resize(data_size);
 
@@ -1436,6 +1436,15 @@ uint32_t RasterizerStorageGLES3::texture_get_texid(RID p_texture) const {
 	ERR_FAIL_COND_V(!texture, 0);
 
 	return texture->tex_id;
+}
+void RasterizerStorageGLES3::texture_bind(RID p_texture, uint32_t p_texture_no) {
+
+	Texture *texture = texture_owner.getornull(p_texture);
+
+	ERR_FAIL_COND(!texture);
+
+	glActiveTexture(GL_TEXTURE0 + p_texture_no);
+	glBindTexture(texture->target, texture->tex_id);
 }
 uint32_t RasterizerStorageGLES3::texture_get_width(RID p_texture) const {
 
@@ -3501,7 +3510,7 @@ void RasterizerStorageGLES3::mesh_add_surface(RID p_mesh, uint32_t p_format, VS:
 				if (p_vertex_count < (1 << 16)) {
 					//read 16 bit indices
 					const uint16_t *src_idx = (const uint16_t *)ir.ptr();
-					for (int i = 0; i < index_count; i += 6) {
+					for (int i = 0; i + 5 < index_count; i += 6) {
 
 						wr[i + 0] = src_idx[i / 2];
 						wr[i + 1] = src_idx[i / 2 + 1];
@@ -3515,7 +3524,7 @@ void RasterizerStorageGLES3::mesh_add_surface(RID p_mesh, uint32_t p_format, VS:
 
 					//read 16 bit indices
 					const uint32_t *src_idx = (const uint32_t *)ir.ptr();
-					for (int i = 0; i < index_count; i += 6) {
+					for (int i = 0; i + 5 < index_count; i += 6) {
 
 						wr[i + 0] = src_idx[i / 2];
 						wr[i + 1] = src_idx[i / 2 + 1];
@@ -3531,7 +3540,7 @@ void RasterizerStorageGLES3::mesh_add_surface(RID p_mesh, uint32_t p_format, VS:
 				index_count = p_vertex_count * 2;
 				wf_indices.resize(index_count);
 				PoolVector<uint32_t>::Write wr = wf_indices.write();
-				for (int i = 0; i < index_count; i += 6) {
+				for (int i = 0; i + 5 < index_count; i += 6) {
 
 					wr[i + 0] = i / 2;
 					wr[i + 1] = i / 2 + 1;
@@ -4635,7 +4644,6 @@ Transform2D RasterizerStorageGLES3::multimesh_instance_get_transform_2d(RID p_mu
 }
 
 Color RasterizerStorageGLES3::multimesh_instance_get_color(RID p_multimesh, int p_index) const {
-
 	MultiMesh *multimesh = multimesh_owner.getornull(p_multimesh);
 	ERR_FAIL_COND_V(!multimesh, Color());
 	ERR_FAIL_INDEX_V(p_index, multimesh->size, Color());
@@ -6065,10 +6073,7 @@ void RasterizerStorageGLES3::particles_set_emitting(RID p_particles, bool p_emit
 
 	Particles *particles = particles_owner.getornull(p_particles);
 	ERR_FAIL_COND(!particles);
-	if (p_emitting != particles->emitting) {
-		// Restart is overridden by set_emitting
-		particles->restart_request = false;
-	}
+
 	particles->emitting = p_emitting;
 }
 
@@ -6332,7 +6337,7 @@ AABB RasterizerStorageGLES3::particles_get_current_aabb(RID p_particles) {
 	}
 
 #if defined(GLES_OVER_GL) || defined(__EMSCRIPTEN__)
-	r = PoolVector<uint8_t>::Read();
+	r.release();
 	vector = PoolVector<uint8_t>();
 #else
 	glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -6466,7 +6471,6 @@ void RasterizerStorageGLES3::update_particles() {
 		Particles *particles = particle_update_list.first()->self();
 
 		if (particles->restart_request) {
-			particles->emitting = true; //restart from zero
 			particles->prev_ticks = 0;
 			particles->phase = 0;
 			particles->prev_phase = 0;
@@ -6704,9 +6708,7 @@ void RasterizerStorageGLES3::instance_add_dependency(RID p_base, RasterizerScene
 			ERR_FAIL_COND(!inst);
 		} break;
 		default: {
-			if (!inst) {
-				ERR_FAIL();
-			}
+			ERR_FAIL();
 		}
 	}
 
@@ -6751,14 +6753,9 @@ void RasterizerStorageGLES3::instance_remove_dependency(RID p_base, RasterizerSc
 			ERR_FAIL_COND(!inst);
 		} break;
 		default: {
-
-			if (!inst) {
-				ERR_FAIL();
-			}
+			ERR_FAIL();
 		}
 	}
-
-	ERR_FAIL_COND(!inst);
 
 	inst->instance_list.remove(&p_instance->dependency_item);
 }

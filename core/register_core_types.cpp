@@ -184,10 +184,13 @@ void register_core_types() {
 	ClassDB::register_class<PackedDataContainer>();
 	ClassDB::register_virtual_class<PackedDataContainerRef>();
 	ClassDB::register_class<AStar>();
+	ClassDB::register_class<AStar2D>();
 	ClassDB::register_class<EncodedObjectAsID>();
 	ClassDB::register_class<RandomNumberGenerator>();
 
 	ClassDB::register_class<JSONParseResult>();
+
+	ClassDB::register_virtual_class<ResourceImporter>();
 
 	ip = IP::create();
 
@@ -272,6 +275,7 @@ void unregister_core_types() {
 
 	ResourceLoader::finalize();
 
+	ClassDB::cleanup_defaults();
 	ObjectDB::cleanup();
 
 	unregister_variant_methods();

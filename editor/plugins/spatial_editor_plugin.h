@@ -119,7 +119,7 @@ public:
 
 	void set_spatial_node(Spatial *p_node);
 	Spatial *get_spatial_node() const { return spatial_node; }
-	EditorSpatialGizmoPlugin *get_plugin() const { return gizmo_plugin; }
+	Ref<EditorSpatialGizmoPlugin> get_plugin() const { return gizmo_plugin; }
 	Vector3 get_handle_pos(int p_idx) const;
 	bool intersect_frustum(const Camera *p_camera, const Vector<Plane> &p_frustum);
 	bool intersect_ray(Camera *p_camera, const Point2 &p_point, Vector3 &r_pos, Vector3 &r_normal, int *r_gizmo_handle = NULL, bool p_sec_first = false);
@@ -133,7 +133,7 @@ public:
 	virtual bool is_editable() const;
 
 	void set_hidden(bool p_hidden);
-	void set_plugin(EditorSpatialGizmoPlugin *p_gizmo);
+	void set_plugin(EditorSpatialGizmoPlugin *p_plugin);
 
 	EditorSpatialGizmo();
 	~EditorSpatialGizmo();
@@ -176,6 +176,12 @@ public:
 		GIZMO_BASE_LAYER = 27,
 		GIZMO_EDIT_LAYER = 26,
 		GIZMO_GRID_LAYER = 25
+	};
+
+	enum NavigationScheme {
+		NAVIGATION_GODOT,
+		NAVIGATION_MAYA,
+		NAVIGATION_MODO,
 	};
 
 private:
@@ -259,12 +265,6 @@ private:
 	bool clicked_wants_append;
 
 	PopupMenu *selection_menu;
-
-	enum NavigationScheme {
-		NAVIGATION_GODOT,
-		NAVIGATION_MAYA,
-		NAVIGATION_MODO,
-	};
 
 	enum NavigationZoomStyle {
 		NAVIGATION_ZOOM_VERTICAL,
@@ -431,7 +431,8 @@ public:
 
 class SpatialEditorViewportContainer : public Container {
 
-	GDCLASS(SpatialEditorViewportContainer, Container)
+	GDCLASS(SpatialEditorViewportContainer, Container);
+
 public:
 	enum View {
 		VIEW_USE_1_VIEWPORT,

@@ -435,7 +435,6 @@ int FileAccessNetwork::get_buffer(uint8_t *p_dst, int p_length) const {
 
 					_queue_page(page + j);
 				}
-				buff = pages.write[page].buffer.ptrw();
 				//queue pages
 				buffer_mutex->unlock();
 			}
@@ -501,13 +500,13 @@ uint64_t FileAccessNetwork::_get_modified_time(const String &p_file) {
 }
 
 uint32_t FileAccessNetwork::_get_unix_permissions(const String &p_file) {
-	//could be implemented, not sure if worth it
+	ERR_PRINT("Getting UNIX permissions from network drives is not implemented yet");
 	return 0;
 }
 
 Error FileAccessNetwork::_set_unix_permissions(const String &p_file, uint32_t p_permissions) {
-
-	return FAILED;
+	ERR_PRINT("Setting UNIX permissions on network drives is not implemented yet");
+	return ERR_UNAVAILABLE;
 }
 
 void FileAccessNetwork::configure() {

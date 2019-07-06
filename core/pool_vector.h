@@ -301,6 +301,10 @@ public:
 		virtual ~Access() {
 			_unref();
 		}
+
+		void release() {
+			_unref();
+		}
 	};
 
 	class Read : public Access {
@@ -411,8 +415,8 @@ public:
 			p_to = size() + p_to;
 		}
 
-		CRASH_BAD_INDEX(p_from, size());
-		CRASH_BAD_INDEX(p_to, size());
+		ERR_FAIL_INDEX_V(p_from, size(), PoolVector<T>());
+		ERR_FAIL_INDEX_V(p_to, size(), PoolVector<T>());
 
 		PoolVector<T> slice;
 		int span = 1 + p_to - p_from;
@@ -510,6 +514,8 @@ const T PoolVector<T>::operator[](int p_index) const {
 
 template <class T>
 Error PoolVector<T>::resize(int p_size) {
+
+	ERR_FAIL_COND_V(p_size < 0, ERR_INVALID_PARAMETER);
 
 	if (alloc == NULL) {
 

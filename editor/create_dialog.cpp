@@ -191,24 +191,36 @@ void CreateDialog::add_type(const String &p_type, HashMap<String, TreeItem *> &p
 		item->set_custom_color(0, get_color("disabled_font_color", "Editor"));
 		item->set_selectable(0, false);
 	} else if (!(*to_select && (*to_select)->get_text(0) == search_box->get_text())) {
-		bool is_search_subsequence = search_box->get_text().is_subsequence_ofi(p_type);
-		String to_select_type = *to_select ? (*to_select)->get_text(0) : "";
-		to_select_type = to_select_type.split(" ")[0];
-		bool current_item_is_preferred;
-		if (cpp_type) {
-			String cpp_to_select_type = to_select_type;
-			if (ScriptServer::is_global_class(to_select_type))
-				cpp_to_select_type = ScriptServer::get_global_class_native_base(to_select_type);
-			current_item_is_preferred = ClassDB::is_parent_class(p_type, preferred_search_result_type) && !ClassDB::is_parent_class(cpp_to_select_type, preferred_search_result_type);
-		} else {
-			current_item_is_preferred = ed.script_class_is_parent(p_type, preferred_search_result_type) && !ed.script_class_is_parent(to_select_type, preferred_search_result_type) && search_box->get_text() != to_select_type;
-		}
-		if (search_box->get_text() == p_type || (*to_select && p_type.length() < (*to_select)->get_text(0).length())) {
-			current_item_is_preferred = true;
+		bool current_type_prefered = _is_type_prefered(p_type);
+		bool selected_type_prefered = *to_select ? _is_type_prefered((*to_select)->get_text(0).split(" ")[0]) : false;
+
+		String search_term = search_box->get_text().to_lower();
+		bool is_subsequence_of_type = search_box->get_text().is_subsequence_ofi(p_type);
+		bool is_substring_of_type = p_type.to_lower().find(search_term) >= 0;
+		bool is_substring_of_selected = false;
+		bool is_subsequence_of_selected = false;
+		bool is_selected_equal = false;
+
+		if (*to_select) {
+			String name = (*to_select)->get_text(0).split(" ")[0].to_lower();
+			is_substring_of_selected = name.find(search_term) >= 0;
+			is_subsequence_of_selected = search_term.is_subsequence_of(name);
+			is_selected_equal = name == search_term;
 		}
 
-		if (((!*to_select || current_item_is_preferred) && is_search_subsequence)) {
-			*to_select = item;
+		if (is_subsequence_of_type && !is_selected_equal) {
+			if (is_substring_of_type) {
+				if (!is_substring_of_selected || (is_substring_of_selected && (current_type_prefered && !selected_type_prefered))) {
+					*to_select = item;
+				}
+			} else {
+				// substring results weigh more than subsequences, so let's make sure we don't override them
+				if (!is_substring_of_selected) {
+					if (!is_subsequence_of_selected || (is_subsequence_of_selected && (current_type_prefered && !selected_type_prefered))) {
+						*to_select = item;
+					}
+				}
+			}
 		}
 	}
 
@@ -232,6 +244,16 @@ void CreateDialog::add_type(const String &p_type, HashMap<String, TreeItem *> &p
 	p_types[p_type] = item;
 }
 
+bool CreateDialog::_is_type_prefered(const String &type) {
+	bool cpp_type = ClassDB::class_exists(type);
+	EditorData &ed = EditorNode::get_editor_data();
+
+	if (cpp_type) {
+		return ClassDB::is_parent_class(type, preferred_search_result_type);
+	}
+	return ed.script_class_is_parent(type, preferred_search_result_type);
+}
+
 bool CreateDialog::_is_class_disabled_by_feature_profile(const StringName &p_class) {
 
 	Ref<EditorFeatureProfile> profile = EditorFeatureProfileManager::get_singleton()->get_current_profile();
@@ -246,13 +268,14 @@ bool CreateDialog::_is_class_disabled_by_feature_profile(const StringName &p_cla
 		if (profile->is_class_disabled(class_name)) {
 			return true;
 		}
-		class_name = ClassDB::get_parent_class(class_name);
+		class_name = ClassDB::get_parent_class_nocheck(class_name);
 	}
 
 	return false;
 }
 
 void CreateDialog::select_type(const String &p_type) {
+
 	TreeItem *to_select;
 	if (search_options_types.has(p_type)) {
 		to_select = search_options_types[p_type];
@@ -274,15 +297,10 @@ void CreateDialog::select_type(const String &p_type) {
 }
 
 void CreateDialog::_update_search() {
-
 	search_options->clear();
 	favorite->set_disabled(true);
 
 	help_bit->set_text("");
-	/*
-	TreeItem *root = search_options->create_item();
-	_parse_fs(EditorFileSystem::get_singleton()->get_filesystem());
-*/
 
 	search_options_types.clear();
 
@@ -311,8 +329,9 @@ void CreateDialog::_update_search() {
 		if (cpp_type && !ClassDB::can_instance(type))
 			continue; // can't create what can't be instanced
 
-		bool skip = false;
 		if (cpp_type) {
+			bool skip = false;
+
 			for (Set<StringName>::Element *E = type_blacklist.front(); E && !skip; E = E->next()) {
 				if (ClassDB::is_parent_class(type, E->get()))
 					skip = true;
@@ -733,6 +752,7 @@ CreateDialog::CreateDialog() {
 	fav_vb->add_margin_child(TTR("Favorites:"), favorites, true);
 	favorites->set_hide_root(true);
 	favorites->set_hide_folding(true);
+	favorites->set_allow_reselect(true);
 	favorites->connect("cell_selected", this, "_favorite_selected");
 	favorites->connect("item_activated", this, "_favorite_activated");
 	favorites->set_drag_forwarding(this);
@@ -747,6 +767,7 @@ CreateDialog::CreateDialog() {
 	rec_vb->add_margin_child(TTR("Recent:"), recent, true);
 	recent->set_hide_root(true);
 	recent->set_hide_folding(true);
+	recent->set_allow_reselect(true);
 	recent->connect("cell_selected", this, "_history_selected");
 	recent->connect("item_activated", this, "_history_activated");
 	recent->add_constant_override("draw_guides", 1);

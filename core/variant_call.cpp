@@ -33,10 +33,10 @@
 #include "core/color_names.inc"
 #include "core/core_string_names.h"
 #include "core/io/compression.h"
+#include "core/math/crypto_core.h"
 #include "core/object.h"
 #include "core/os/os.h"
 #include "core/script_language.h"
-#include "thirdparty/misc/sha256.h"
 
 typedef void (*VariantFunc)(Variant &r_ret, Variant &p_self, const Variant **p_args);
 typedef void (*VariantConstructFunc)(Variant &r_ret, const Variant **p_args);
@@ -275,8 +275,10 @@ struct _VariantCall {
 	VCALL_LOCALMEM2(String, erase);
 	VCALL_LOCALMEM0R(String, hash);
 	VCALL_LOCALMEM0R(String, md5_text);
+	VCALL_LOCALMEM0R(String, sha1_text);
 	VCALL_LOCALMEM0R(String, sha256_text);
 	VCALL_LOCALMEM0R(String, md5_buffer);
+	VCALL_LOCALMEM0R(String, sha1_buffer);
 	VCALL_LOCALMEM0R(String, sha256_buffer);
 	VCALL_LOCALMEM0R(String, empty);
 	VCALL_LOCALMEM0R(String, is_abs_path);
@@ -285,6 +287,8 @@ struct _VariantCall {
 	VCALL_LOCALMEM0R(String, get_file);
 	VCALL_LOCALMEM0R(String, xml_escape);
 	VCALL_LOCALMEM0R(String, xml_unescape);
+	VCALL_LOCALMEM0R(String, http_escape);
+	VCALL_LOCALMEM0R(String, http_unescape);
 	VCALL_LOCALMEM0R(String, c_escape);
 	VCALL_LOCALMEM0R(String, c_unescape);
 	VCALL_LOCALMEM0R(String, json_escape);
@@ -315,7 +319,7 @@ struct _VariantCall {
 		retval.resize(len);
 		PoolByteArray::Write w = retval.write();
 		copymem(w.ptr(), charstr.ptr(), len);
-		w = PoolVector<uint8_t>::Write();
+		w.release();
 
 		r_ret = retval;
 	}
@@ -330,7 +334,7 @@ struct _VariantCall {
 		retval.resize(len);
 		PoolByteArray::Write w = retval.write();
 		copymem(w.ptr(), charstr.ptr(), len);
-		w = PoolVector<uint8_t>::Write();
+		w.release();
 
 		r_ret = retval;
 	}
@@ -596,10 +600,7 @@ struct _VariantCall {
 		PoolByteArray::Read r = ba->read();
 		String s;
 		unsigned char hash[32];
-		sha256_context sha256;
-		sha256_init(&sha256);
-		sha256_hash(&sha256, (unsigned char *)r.ptr(), ba->size());
-		sha256_done(&sha256, hash);
+		CryptoCore::sha256((unsigned char *)r.ptr(), ba->size(), hash);
 		s = String::hex_encode_buffer(hash, 32);
 		r_ret = s;
 	}
@@ -1497,7 +1498,7 @@ void register_variant_methods() {
 	ADDFUNC1R(STRING, INT, String, casecmp_to, STRING, "to", varray());
 	ADDFUNC1R(STRING, INT, String, nocasecmp_to, STRING, "to", varray());
 	ADDFUNC0R(STRING, INT, String, length, varray());
-	ADDFUNC2R(STRING, STRING, String, substr, INT, "from", INT, "len", varray());
+	ADDFUNC2R(STRING, STRING, String, substr, INT, "from", INT, "len", varray(-1));
 
 	ADDFUNC2R(STRING, INT, String, find, STRING, "what", INT, "from", varray(0));
 
@@ -1519,9 +1520,9 @@ void register_variant_methods() {
 	ADDFUNC2R(STRING, STRING, String, replacen, STRING, "what", STRING, "forwhat", varray());
 	ADDFUNC2R(STRING, STRING, String, insert, INT, "position", STRING, "what", varray());
 	ADDFUNC0R(STRING, STRING, String, capitalize, varray());
-	ADDFUNC3R(STRING, POOL_STRING_ARRAY, String, split, STRING, "divisor", BOOL, "allow_empty", INT, "maxsplit", varray(true, 0));
-	ADDFUNC3R(STRING, POOL_STRING_ARRAY, String, rsplit, STRING, "divisor", BOOL, "allow_empty", INT, "maxsplit", varray(true, 0));
-	ADDFUNC2R(STRING, POOL_REAL_ARRAY, String, split_floats, STRING, "divisor", BOOL, "allow_empty", varray(true));
+	ADDFUNC3R(STRING, POOL_STRING_ARRAY, String, split, STRING, "delimiter", BOOL, "allow_empty", INT, "maxsplit", varray(true, 0));
+	ADDFUNC3R(STRING, POOL_STRING_ARRAY, String, rsplit, STRING, "delimiter", BOOL, "allow_empty", INT, "maxsplit", varray(true, 0));
+	ADDFUNC2R(STRING, POOL_REAL_ARRAY, String, split_floats, STRING, "delimiter", BOOL, "allow_empty", varray(true));
 
 	ADDFUNC0R(STRING, STRING, String, to_upper, varray());
 	ADDFUNC0R(STRING, STRING, String, to_lower, varray());
@@ -1540,8 +1541,10 @@ void register_variant_methods() {
 	ADDFUNC2(STRING, NIL, String, erase, INT, "position", INT, "chars", varray());
 	ADDFUNC0R(STRING, INT, String, hash, varray());
 	ADDFUNC0R(STRING, STRING, String, md5_text, varray());
+	ADDFUNC0R(STRING, STRING, String, sha1_text, varray());
 	ADDFUNC0R(STRING, STRING, String, sha256_text, varray());
 	ADDFUNC0R(STRING, POOL_BYTE_ARRAY, String, md5_buffer, varray());
+	ADDFUNC0R(STRING, POOL_BYTE_ARRAY, String, sha1_buffer, varray());
 	ADDFUNC0R(STRING, POOL_BYTE_ARRAY, String, sha256_buffer, varray());
 	ADDFUNC0R(STRING, BOOL, String, empty, varray());
 	ADDFUNC0R(STRING, BOOL, String, is_abs_path, varray());
@@ -1550,6 +1553,8 @@ void register_variant_methods() {
 	ADDFUNC0R(STRING, STRING, String, get_file, varray());
 	ADDFUNC0R(STRING, STRING, String, xml_escape, varray());
 	ADDFUNC0R(STRING, STRING, String, xml_unescape, varray());
+	ADDFUNC0R(STRING, STRING, String, http_escape, varray());
+	ADDFUNC0R(STRING, STRING, String, http_unescape, varray());
 	ADDFUNC0R(STRING, STRING, String, c_escape, varray());
 	ADDFUNC0R(STRING, STRING, String, c_unescape, varray());
 	ADDFUNC0R(STRING, STRING, String, json_escape, varray());

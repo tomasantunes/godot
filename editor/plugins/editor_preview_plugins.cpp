@@ -643,7 +643,7 @@ Ref<Texture> EditorAudioStreamPreviewPlugin::generate(const RES &p_from, const S
 		float max = -1000;
 		float min = 1000;
 		int from = uint64_t(i) * frame_length / w;
-		int to = uint64_t(i + 1) * frame_length / w;
+		int to = (uint64_t(i) + 1) * frame_length / w;
 		to = MIN(to, frame_length);
 		from = MIN(from, frame_length - 1);
 		if (to == from) {
@@ -676,7 +676,7 @@ Ref<Texture> EditorAudioStreamPreviewPlugin::generate(const RES &p_from, const S
 		}
 	}
 
-	imgdata = PoolVector<uint8_t>::Write();
+	imgdata.release();
 	//post_process_preview(img);
 
 	Ref<ImageTexture> ptex = Ref<ImageTexture>(memnew(ImageTexture));

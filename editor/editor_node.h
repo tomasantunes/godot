@@ -41,8 +41,8 @@
 #include "editor/editor_feature_profile.h"
 #include "editor/editor_folding.h"
 #include "editor/editor_inspector.h"
+#include "editor/editor_layouts_dialog.h"
 #include "editor/editor_log.h"
-#include "editor/editor_name_dialog.h"
 #include "editor/editor_plugin.h"
 #include "editor/editor_resource_preview.h"
 #include "editor/editor_run.h"
@@ -85,6 +85,7 @@
 #include "scene/gui/tool_button.h"
 #include "scene/gui/tree.h"
 #include "scene/gui/viewport_container.h"
+
 /**
 	@author Juan Linietsky <reduzio@gmail.com>
 */
@@ -181,8 +182,8 @@ private:
 		RUN_DEBUG_NAVIGATION,
 		RUN_DEPLOY_REMOTE_DEBUG,
 		RUN_RELOAD_SCRIPTS,
-		SETTINGS_UPDATE_ALWAYS,
-		SETTINGS_UPDATE_CHANGES,
+		SETTINGS_UPDATE_CONTINUOUSLY,
+		SETTINGS_UPDATE_WHEN_CHANGED,
 		SETTINGS_UPDATE_SPINNER_HIDE,
 		SETTINGS_PREFERENCES,
 		SETTINGS_LAYOUT_SAVE,
@@ -193,9 +194,13 @@ private:
 		SETTINGS_MANAGE_EXPORT_TEMPLATES,
 		SETTINGS_MANAGE_FEATURE_PROFILES,
 		SETTINGS_PICK_MAIN_SCENE,
+		SETTINGS_TOGGLE_CONSOLE,
 		SETTINGS_TOGGLE_FULLSCREEN,
 		SETTINGS_HELP,
 		SCENE_TAB_CLOSE,
+
+		EDITOR_SCREENSHOT,
+		EDITOR_OPEN_SCREENSHOT,
 
 		HELP_SEARCH,
 		HELP_DOCS,
@@ -278,6 +283,8 @@ private:
 	ToolButton *search_button;
 	TextureProgress *audio_vu;
 
+	Timer *screenshot_timer;
+
 	PluginConfigDialog *plugin_config_dialog;
 
 	RichTextLabel *load_errors;
@@ -307,7 +314,7 @@ private:
 	int overridden_default_layout;
 	Ref<ConfigFile> default_layout;
 	PopupMenu *editor_layouts;
-	EditorNameDialog *layout_dialog;
+	EditorLayoutsDialog *layout_dialog;
 
 	ConfirmationDialog *custom_build_manage_templates;
 	ConfirmationDialog *install_android_build_template;
@@ -323,10 +330,10 @@ private:
 	EditorFileDialog *file_export;
 	EditorFileDialog *file_export_lib;
 	EditorFileDialog *file_script;
-	CheckButton *file_export_lib_merge;
+	CheckBox *file_export_lib_merge;
 	LineEdit *file_export_password;
 	String current_path;
-	MenuButton *update_menu;
+	MenuButton *update_spinner;
 
 	String defer_load_scene;
 	String defer_export;
@@ -392,9 +399,9 @@ private:
 
 	bool waiting_for_sources_changed;
 
-	uint32_t circle_step_msec;
-	uint64_t circle_step_frame;
-	int circle_step;
+	uint32_t update_spinner_step_msec;
+	uint64_t update_spinner_step_frame;
+	int update_spinner_step;
 
 	Vector<EditorPlugin *> editor_plugins;
 	EditorPlugin *editor_plugin_screen;
@@ -446,6 +453,11 @@ private:
 	void _menu_option(int p_option);
 	void _menu_confirm_current();
 	void _menu_option_confirm(int p_option, bool p_confirmed);
+
+	void _request_screenshot();
+	void _screenshot(bool p_use_utc = false);
+	void _save_screenshot(NodePath p_path);
+
 	void _tool_menu_option(int p_idx);
 	void _update_debug_options();
 
@@ -525,8 +537,8 @@ private:
 	static void _editor_file_dialog_unregister(EditorFileDialog *p_dialog);
 
 	void _cleanup_scene();
-	void _remove_edited_scene();
-	void _remove_scene(int index);
+	void _remove_edited_scene(bool p_change_tab = true);
+	void _remove_scene(int index, bool p_change_tab = true);
 	bool _find_and_save_resource(RES p_res, Map<RES, bool> &processed, int32_t flags);
 	bool _find_and_save_edited_subresources(Object *obj, Map<RES, bool> &processed, int32_t flags);
 	void _save_edited_subresources(Node *scene, Map<RES, bool> &processed, int32_t flags);
@@ -627,6 +639,8 @@ private:
 
 	void _license_tree_selected();
 
+	void _update_update_spinner();
+
 	Vector<Ref<EditorResourceConversionPlugin> > resource_conversion_plugins;
 
 	PrintHandlerList print_handler;
@@ -642,7 +656,14 @@ private:
 
 protected:
 	void _notification(int p_what);
+
 	static void _bind_methods();
+
+protected:
+	friend class FileSystemDock;
+
+	int get_current_tab();
+	void set_current_tab(int p_tab);
 
 public:
 	bool call_build();
@@ -815,6 +836,7 @@ public:
 	void remove_tool_menu_item(const String &p_name);
 
 	void save_all_scenes();
+	void save_scene_list(Vector<String> p_scene_filenames);
 	void restart_editor();
 
 	void dim_editor(bool p_dimming);

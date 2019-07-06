@@ -40,7 +40,8 @@
 class Camera;
 class AudioStreamPlayer3D : public Spatial {
 
-	GDCLASS(AudioStreamPlayer3D, Spatial)
+	GDCLASS(AudioStreamPlayer3D, Spatial);
+
 public:
 	enum AttenuationModel {
 		ATTENUATION_INVERSE_DISTANCE,
@@ -70,7 +71,7 @@ private:
 	struct Output {
 
 		AudioFilterSW filter;
-		AudioFilterSW::Processor filter_process[6];
+		AudioFilterSW::Processor filter_process[8];
 		AudioFrame vol[4];
 		float filter_gain;
 		float pitch_scale;

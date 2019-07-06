@@ -166,6 +166,8 @@ bool FindReplaceBar::_search(uint32_t p_flags, int p_from_line, int p_from_col) 
 		result_line = -1;
 		result_col = -1;
 		text_edit->set_search_text("");
+		text_edit->set_search_flags(p_flags);
+		text_edit->set_current_search_result(line, col);
 		set_error(text.empty() ? "" : TTR("No Matches"));
 	}
 
@@ -339,7 +341,11 @@ bool FindReplaceBar::search_prev() {
 bool FindReplaceBar::search_next() {
 
 	uint32_t flags = 0;
-	String text = get_search_text();
+	String text;
+	if (replace_all_mode)
+		text = get_replace_text();
+	else
+		text = get_search_text();
 
 	if (is_whole_words())
 		flags |= TextEdit::SEARCH_WHOLE_WORDS;
@@ -587,6 +593,26 @@ FindReplaceBar::FindReplaceBar() {
 
 /*** CODE EDITOR ****/
 
+// This function should be used to handle shortcuts that could otherwise
+// be handled too late if they weren't handled here.
+void CodeTextEditor::_input(const Ref<InputEvent> &event) {
+
+	const Ref<InputEventKey> key_event = event;
+	if (!key_event.is_valid() || !key_event->is_pressed())
+		return;
+
+	if (ED_IS_SHORTCUT("script_text_editor/move_up", key_event)) {
+		move_lines_up();
+		accept_event();
+		return;
+	}
+	if (ED_IS_SHORTCUT("script_text_editor/move_down", key_event)) {
+		move_lines_down();
+		accept_event();
+		return;
+	}
+}
+
 void CodeTextEditor::_text_editor_gui_input(const Ref<InputEvent> &p_event) {
 
 	Ref<InputEventMouseButton> mb = p_event;
@@ -702,7 +728,7 @@ void CodeTextEditor::_code_complete_timer_timeout() {
 
 void CodeTextEditor::_complete_request() {
 
-	List<String> entries;
+	List<ScriptCodeCompletionOption> entries;
 	String ctext = text_editor->get_text_for_completion();
 	_code_complete_script(ctext, &entries);
 	bool forced = false;
@@ -711,15 +737,55 @@ void CodeTextEditor::_complete_request() {
 	}
 	if (entries.size() == 0)
 		return;
-	Vector<String> strs;
-	strs.resize(entries.size());
-	int i = 0;
-	for (List<String>::Element *E = entries.front(); E; E = E->next()) {
 
-		strs.write[i++] = E->get();
+	for (List<ScriptCodeCompletionOption>::Element *E = entries.front(); E; E = E->next()) {
+		E->get().icon = _get_completion_icon(E->get());
 	}
+	text_editor->code_complete(entries, forced);
+}
 
-	text_editor->code_complete(strs, forced);
+Ref<Texture> CodeTextEditor::_get_completion_icon(const ScriptCodeCompletionOption &p_option) {
+	Ref<Texture> tex;
+	switch (p_option.kind) {
+		case ScriptCodeCompletionOption::KIND_CLASS: {
+			if (has_icon(p_option.display, "EditorIcons")) {
+				tex = get_icon(p_option.display, "EditorIcons");
+			} else {
+				tex = get_icon("Object", "EditorIcons");
+			}
+		} break;
+		case ScriptCodeCompletionOption::KIND_ENUM:
+			tex = get_icon("Enum", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_FILE_PATH:
+			tex = get_icon("File", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_NODE_PATH:
+			tex = get_icon("NodePath", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_VARIABLE:
+			tex = get_icon("Variant", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_CONSTANT:
+			tex = get_icon("MemberConstant", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_MEMBER:
+			tex = get_icon("MemberProperty", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_SIGNAL:
+			tex = get_icon("MemberSignal", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_FUNCTION:
+			tex = get_icon("MemberMethod", "EditorIcons");
+			break;
+		case ScriptCodeCompletionOption::KIND_PLAIN_TEXT:
+			tex = get_icon("CubeMesh", "EditorIcons");
+			break;
+		default:
+			tex = get_icon("String", "EditorIcons");
+			break;
+	}
+	return tex;
 }
 
 void CodeTextEditor::_font_resize_timeout() {
@@ -799,6 +865,24 @@ void CodeTextEditor::trim_trailing_whitespace() {
 	}
 
 	if (trimed_whitespace) {
+		text_editor->end_complex_operation();
+		text_editor->update();
+	}
+}
+
+void CodeTextEditor::insert_final_newline() {
+	int final_line = text_editor->get_line_count() - 1;
+
+	String line = text_editor->get_line(final_line);
+
+	//length 0 means it's already an empty line,
+	//no need to add a newline
+	if (line.length() > 0 && !line.ends_with("\n")) {
+		text_editor->begin_complex_operation();
+
+		line += "\n";
+		text_editor->set_line(final_line, line);
+
 		text_editor->end_complex_operation();
 		text_editor->update();
 	}
@@ -912,7 +996,7 @@ void CodeTextEditor::convert_case(CaseStyle p_case) {
 	for (int i = begin; i <= end; i++) {
 		int len = text_editor->get_line(i).length();
 		if (i == end)
-			len -= len - end_col;
+			len = end_col;
 		if (i == begin)
 			len -= begin_col;
 		String new_line = text_editor->get_line(i).substr(i == begin ? begin_col : 0, len);
@@ -1179,6 +1263,11 @@ void CodeTextEditor::goto_line_selection(int p_line, int p_begin, int p_end) {
 	text_editor->select(p_line, p_begin, p_line, p_end);
 }
 
+void CodeTextEditor::goto_line_centered(int p_line) {
+	goto_line(p_line);
+	text_editor->call_deferred("center_viewport_to_cursor");
+}
+
 void CodeTextEditor::set_executing_line(int p_line) {
 	text_editor->set_executing_line(p_line);
 }
@@ -1312,9 +1401,12 @@ void CodeTextEditor::_on_settings_change() {
 }
 
 void CodeTextEditor::_text_changed_idle_timeout() {
-
 	_validate_script();
 	emit_signal("validate_script");
+}
+
+void CodeTextEditor::validate_script() {
+	idle->start();
 }
 
 void CodeTextEditor::_warning_label_gui_input(const Ref<InputEvent> &p_event) {
@@ -1353,6 +1445,9 @@ void CodeTextEditor::_notification(int p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			warning_button->set_icon(get_icon("NodeWarning", "EditorIcons"));
 			add_constant_override("separation", 4 * EDSCALE);
+		} break;
+		case NOTIFICATION_VISIBILITY_CHANGED: {
+			set_process_input(is_visible_in_tree());
 		} break;
 		default:
 			break;
@@ -1433,6 +1528,7 @@ void CodeTextEditor::remove_all_bookmarks() {
 
 void CodeTextEditor::_bind_methods() {
 
+	ClassDB::bind_method(D_METHOD("_input"), &CodeTextEditor::_input);
 	ClassDB::bind_method("_text_editor_gui_input", &CodeTextEditor::_text_editor_gui_input);
 	ClassDB::bind_method("_line_col_changed", &CodeTextEditor::_line_col_changed);
 	ClassDB::bind_method("_text_changed", &CodeTextEditor::_text_changed);

@@ -83,6 +83,10 @@ String ProjectSettings::localize_path(const String &p_path) const {
 		// `plus_file("")` is an easy way to ensure we have a trailing '/'.
 		const String res_path = resource_path.plus_file("");
 
+		// DirAccess::get_current_dir() is not guaranteed to return a path that with a trailing '/',
+		// so we must make sure we have it as well in order to compare with 'res_path'.
+		cwd = cwd.plus_file("");
+
 		if (!cwd.begins_with(res_path)) {
 			return p_path;
 		};
@@ -343,17 +347,17 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 		return err;
 	}
 
-	// Attempt with exec_name.pck
-	// (This is the usual case when distributing a Godot game.)
-
-	// Based on the OS, it can be the exec path + '.pck' (Linux w/o extension, macOS in .app bundle)
-	// or the exec path's basename + '.pck' (Windows).
-	// We need to test both possibilities as extensions for Linux binaries are optional
-	// (so both 'mygame.bin' and 'mygame' should be able to find 'mygame.pck').
-
 	String exec_path = OS::get_singleton()->get_executable_path();
 
 	if (exec_path != "") {
+		// Attempt with exec_name.pck
+		// (This is the usual case when distributing a Godot game.)
+
+		// Based on the OS, it can be the exec path + '.pck' (Linux w/o extension, macOS in .app bundle)
+		// or the exec path's basename + '.pck' (Windows).
+		// We need to test both possibilities as extensions for Linux binaries are optional
+		// (so both 'mygame.bin' and 'mygame' should be able to find 'mygame.pck').
+
 		bool found = false;
 
 		String exec_dir = exec_path.get_base_dir();
@@ -371,6 +375,14 @@ Error ProjectSettings::_setup(const String &p_path, const String &p_main_pack, b
 			// the current working directory. Same story, two tests.
 			if (_load_resource_pack(exec_basename + ".pck") ||
 					_load_resource_pack(exec_filename + ".pck")) {
+				found = true;
+			}
+		}
+
+		// Attempt with PCK bundled into executable
+
+		if (!found) {
+			if (_load_resource_pack(exec_path)) {
 				found = true;
 			}
 		}
@@ -489,7 +501,7 @@ Error ProjectSettings::_load_settings_binary(const String p_path) {
 
 		memdelete(f);
 		ERR_EXPLAIN("Corrupted header in binary project.binary (not ECFG)");
-		ERR_FAIL_V(ERR_FILE_CORRUPT;)
+		ERR_FAIL_V(ERR_FILE_CORRUPT);
 	}
 
 	uint32_t count = f->get_32();
@@ -566,7 +578,7 @@ Error ProjectSettings::_load_settings_text(const String p_path) {
 				if (config_version > CONFIG_VERSION) {
 					memdelete(f);
 					ERR_EXPLAIN(vformat("Can't open project at '%s', its `config_version` (%d) is from a more recent and incompatible version of the engine. Expected config version: %d.", p_path, config_version, CONFIG_VERSION));
-					ERR_FAIL_COND_V(config_version > CONFIG_VERSION, ERR_FILE_CANT_OPEN);
+					ERR_FAIL_V(ERR_FILE_CANT_OPEN);
 				}
 			} else {
 				if (section == String()) {
@@ -579,10 +591,6 @@ Error ProjectSettings::_load_settings_text(const String p_path) {
 			section = next_tag.name;
 		}
 	}
-
-	memdelete(f);
-
-	return OK;
 }
 
 Error ProjectSettings::_load_settings_text_or_binary(const String p_text_path, const String p_bin_path) {
@@ -640,7 +648,7 @@ Error ProjectSettings::_save_settings_binary(const String &p_file, const Map<Str
 	if (err != OK) {
 
 		ERR_EXPLAIN("Couldn't save project.binary at " + p_file);
-		ERR_FAIL_COND_V(err, err)
+		ERR_FAIL_COND_V(err, err);
 	}
 
 	uint8_t hdr[4] = { 'E', 'C', 'F', 'G' };
@@ -732,7 +740,7 @@ Error ProjectSettings::_save_settings_text(const String &p_file, const Map<Strin
 
 	if (err) {
 		ERR_EXPLAIN("Couldn't save project.godot - " + p_file);
-		ERR_FAIL_COND_V(err, err)
+		ERR_FAIL_COND_V(err, err);
 	}
 
 	file->store_line("; Engine configuration file.");
@@ -867,8 +875,6 @@ Error ProjectSettings::save_custom(const String &p_path, const CustomMap &p_cust
 		ERR_EXPLAIN("Unknown config file format: " + p_path);
 		ERR_FAIL_V(ERR_FILE_UNRECOGNIZED);
 	}
-
-	return OK;
 }
 
 Variant _GLOBAL_DEF(const String &p_var, const Variant &p_default, bool p_restart_if_changed) {

@@ -1275,13 +1275,13 @@ void SpatialEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 					_edit.mode = TRANSFORM_TRANSLATE;
 				}
 
-				if (cursor.region_select && nav_mode == NAVIGATION_NONE) {
+				if (cursor.region_select) {
 					cursor.region_end = m->get_position();
 					surface->update();
 					return;
 				}
 
-				if (_edit.mode == TRANSFORM_NONE && nav_mode == NAVIGATION_NONE)
+				if (_edit.mode == TRANSFORM_NONE)
 					return;
 
 				Vector3 ray_pos = _get_ray_pos(m->get_position());
@@ -4211,7 +4211,7 @@ void SpatialEditor::set_state(const Dictionary &p_state) {
 		Array vp = d["viewports"];
 		uint32_t vp_size = static_cast<uint32_t>(vp.size());
 		if (vp_size > VIEWPORTS_COUNT) {
-			WARN_PRINT("Ignoring superfluous viewport settings from spatial editor state.")
+			WARN_PRINT("Ignoring superfluous viewport settings from spatial editor state.");
 			vp_size = VIEWPORTS_COUNT;
 		}
 

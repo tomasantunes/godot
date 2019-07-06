@@ -235,7 +235,7 @@ void GridMapEditor::_menu_option(int p_option) {
 			options->get_popup()->set_item_checked(idx, !options->get_popup()->is_item_checked(idx));
 		} break;
 
-		case MENU_OPTION_SELECTION_DUPLICATE: // fallthrough
+		case MENU_OPTION_SELECTION_DUPLICATE:
 		case MENU_OPTION_SELECTION_CUT: {
 			if (!(selection.active && input_action == INPUT_NONE))
 				break;
@@ -279,7 +279,7 @@ void GridMapEditor::_update_cursor_transform() {
 	cursor_transform = Transform();
 	cursor_transform.origin = cursor_origin;
 	cursor_transform.basis.set_orthogonal_index(cursor_rot);
-	cursor_transform = node->get_transform() * cursor_transform;
+	cursor_transform = node->get_global_transform() * cursor_transform;
 
 	if (cursor_instance.is_valid()) {
 		VisualServer::get_singleton()->instance_set_transform(cursor_instance, cursor_transform);
@@ -420,7 +420,7 @@ bool GridMapEditor::do_input_action(Camera *p_camera, const Point2 &p_point, boo
 	}
 
 	last_mouseover = Vector3(cell[0], cell[1], cell[2]);
-	VS::get_singleton()->instance_set_transform(grid_instance[edit_axis], Transform(Basis(), grid_ofs));
+	VS::get_singleton()->instance_set_transform(grid_instance[edit_axis], node->get_global_transform() * edit_grid_xform);
 
 	if (cursor_instance.is_valid()) {
 
@@ -664,8 +664,10 @@ bool GridMapEditor::forward_spatial_input_event(Camera *p_camera, const Ref<Inpu
 		}
 
 		if (mb->is_pressed()) {
-
-			if (mb->get_button_index() == BUTTON_LEFT) {
+			SpatialEditorViewport::NavigationScheme nav_scheme = (SpatialEditorViewport::NavigationScheme)EditorSettings::get_singleton()->get("editors/3d/navigation/navigation_scheme").operator int();
+			if ((nav_scheme == SpatialEditorViewport::NAVIGATION_MAYA || nav_scheme == SpatialEditorViewport::NAVIGATION_MODO) && mb->get_alt()) {
+				input_action = INPUT_NONE;
+			} else if (mb->get_button_index() == BUTTON_LEFT) {
 
 				if (input_action == INPUT_PASTE) {
 					_do_paste();

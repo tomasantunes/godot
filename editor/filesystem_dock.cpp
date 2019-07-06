@@ -244,7 +244,7 @@ void FileSystemDock::set_display_mode(DisplayMode p_display_mode) {
 void FileSystemDock::_update_display_mode(bool p_force) {
 	// Compute the new display mode
 	if (p_force || old_display_mode != display_mode) {
-		button_toggle_display_mode->set_pressed(display_mode == DISPLAY_MODE_SPLIT ? true : false);
+		button_toggle_display_mode->set_pressed(display_mode == DISPLAY_MODE_SPLIT);
 		switch (display_mode) {
 			case DISPLAY_MODE_TREE_ONLY:
 				tree->show();
@@ -1203,6 +1203,21 @@ void FileSystemDock::_update_favorites_list_after_move(const Map<String, String>
 	EditorSettings::get_singleton()->set_favorites(new_favorites);
 }
 
+void FileSystemDock::_save_scenes_after_move(const Map<String, String> &p_renames) const {
+	Vector<String> remaps;
+	_find_remaps(EditorFileSystem::get_singleton()->get_filesystem(), p_renames, remaps);
+	Vector<String> new_filenames;
+
+	for (int i = 0; i < remaps.size(); ++i) {
+		String file = p_renames.has(remaps[i]) ? p_renames[remaps[i]] : remaps[i];
+		if (ResourceLoader::get_resource_type(file) == "PackedScene") {
+			new_filenames.push_back(file);
+		}
+	}
+
+	editor->save_scene_list(new_filenames);
+}
+
 void FileSystemDock::_make_dir_confirm() {
 	String dir_name = make_dir_dialog_text->get_text().strip_edges();
 
@@ -1281,14 +1296,21 @@ void FileSystemDock::_rename_operation_confirm() {
 	Map<String, String> file_renames;
 	Map<String, String> folder_renames;
 	_try_move_item(to_rename, new_path, file_renames, folder_renames);
+
+	int current_tab = editor->get_current_tab();
+
 	_update_dependencies_after_move(file_renames);
 	_update_resource_paths_after_move(file_renames);
 	_update_project_settings_after_move(file_renames);
 	_update_favorites_list_after_move(file_renames, folder_renames);
 
-	//Rescan everything
+	editor->set_current_tab(current_tab);
+
 	print_verbose("FileSystem: calling rescan.");
 	_rescan();
+
+	print_verbose("FileSystem: saving moved scenes.");
+	_save_scenes_after_move(file_renames);
 }
 
 void FileSystemDock::_duplicate_operation_confirm() {
@@ -1302,13 +1324,13 @@ void FileSystemDock::_duplicate_operation_confirm() {
 		return;
 	}
 
-	String new_path;
 	String base_dir = to_duplicate.path.get_base_dir();
-	if (to_duplicate.is_file) {
-		new_path = base_dir.plus_file(new_name);
-	} else {
-		new_path = base_dir.substr(0, base_dir.find_last("/")) + "/" + new_name;
+	// get_base_dir() returns "some/path" if the original path was "some/path/", so work it around.
+	if (to_duplicate.path.ends_with("/")) {
+		base_dir = base_dir.get_base_dir();
 	}
+
+	String new_path = base_dir.plus_file(new_name);
 
 	//Present a more user friendly warning for name conflict
 	DirAccess *da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
@@ -1384,13 +1406,20 @@ void FileSystemDock::_move_operation_confirm(const String &p_to_path, bool overw
 	}
 
 	if (is_moved) {
+		int current_tab = editor->get_current_tab();
+
 		_update_dependencies_after_move(file_renames);
 		_update_resource_paths_after_move(file_renames);
 		_update_project_settings_after_move(file_renames);
 		_update_favorites_list_after_move(file_renames, folder_renames);
 
+		editor->set_current_tab(current_tab);
+
 		print_verbose("FileSystem: calling rescan.");
 		_rescan();
+
+		print_verbose("FileSystem: saving moved scenes.");
+		_save_scenes_after_move(file_renames);
 	}
 }
 
@@ -2034,13 +2063,11 @@ void FileSystemDock::_get_drag_target_folder(String &target, bool &target_favori
 			}
 		}
 	}
-
-	return;
 }
 
 void FileSystemDock::_file_and_folders_fill_popup(PopupMenu *p_popup, Vector<String> p_paths, bool p_display_path_dependent_options) {
 	// Add options for files and folders
-	ERR_FAIL_COND(p_paths.empty())
+	ERR_FAIL_COND(p_paths.empty());
 
 	Vector<String> filenames;
 	Vector<String> foldernames;

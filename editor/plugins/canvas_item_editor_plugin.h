@@ -265,6 +265,7 @@ private:
 	bool key_rot;
 	bool key_scale;
 	bool panning;
+	bool pan_pressed;
 
 	MenuOption last_option;
 
@@ -383,6 +384,7 @@ private:
 	Ref<ShortCut> set_pivot_shortcut;
 	Ref<ShortCut> multiply_grid_step_shortcut;
 	Ref<ShortCut> divide_grid_step_shortcut;
+	Ref<ShortCut> pan_view_shortcut;
 
 	bool _is_node_locked(const Node *p_node);
 	bool _is_node_movable(const Node *p_node, bool p_popup_warning = false);
@@ -423,7 +425,7 @@ private:
 
 	List<CanvasItem *> _get_edited_canvas_items(bool retreive_locked = false, bool remove_canvas_item_if_parent_in_selection = true);
 	Rect2 _get_encompassing_rect_from_list(List<CanvasItem *> p_list);
-	void _expand_encompassing_rect_using_children(Rect2 &p_rect, const Node *p_node, bool &r_first, const Transform2D &p_parent_xform = Transform2D(), const Transform2D &p_canvas_xform = Transform2D(), bool include_locked_nodes = true);
+	void _expand_encompassing_rect_using_children(Rect2 &r_rect, const Node *p_node, bool &r_first, const Transform2D &p_parent_xform = Transform2D(), const Transform2D &p_canvas_xform = Transform2D(), bool include_locked_nodes = true);
 	Rect2 _get_encompassing_rect(const Node *p_node);
 
 	Object *_get_editor_data(Object *p_what);

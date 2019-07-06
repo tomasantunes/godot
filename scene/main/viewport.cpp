@@ -172,14 +172,16 @@ ViewportTexture::~ViewportTexture() {
 
 class TooltipPanel : public PanelContainer {
 
-	GDCLASS(TooltipPanel, PanelContainer)
+	GDCLASS(TooltipPanel, PanelContainer);
+
 public:
 	TooltipPanel(){};
 };
 
 class TooltipLabel : public Label {
 
-	GDCLASS(TooltipLabel, Label)
+	GDCLASS(TooltipLabel, Label);
+
 public:
 	TooltipLabel(){};
 };
@@ -530,7 +532,7 @@ void Viewport::_notification(int p_what) {
 											Map<ObjectID, uint64_t>::Element *F = physics_2d_mouseover.find(res[i].collider_id);
 
 											if (!F) {
-												F = physics_2d_mouseover.insert(res[i].collider_id, frame);
+												physics_2d_mouseover.insert(res[i].collider_id, frame);
 												co->_mouse_enter();
 											} else {
 												F->get() = frame;
@@ -1442,9 +1444,7 @@ void Viewport::_gui_show_tooltip() {
 		return;
 	}
 
-	Control *rp = which; //->get_root_parent_control();
-	if (!rp)
-		return;
+	Control *rp = which;
 
 	gui.tooltip_popup = which->make_custom_tooltip(tooltip);
 
@@ -1700,6 +1700,8 @@ bool Viewport::_gui_drop(Control *p_at_control, Point2 p_at_pos, bool p_just_che
 }
 
 void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
+
+	ERR_FAIL_COND(p_event.is_null())
 
 	//?
 	/*
@@ -3062,6 +3064,7 @@ void Viewport::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "arvr"), "set_use_arvr", "use_arvr");
 
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "size"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "size_override_stretch"), "set_size_override_stretch", "is_size_override_stretch_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "own_world"), "set_use_own_world", "is_using_own_world");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "world", PROPERTY_HINT_RESOURCE_TYPE, "World"), "set_world", "get_world");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "world_2d", PROPERTY_HINT_RESOURCE_TYPE, "World2D", 0), "set_world_2d", "get_world_2d");

@@ -93,7 +93,7 @@ bool Animation::_set(const StringName &p_name, const Variant &p_value) {
 				TransformTrack *tt = static_cast<TransformTrack *>(tracks[track]);
 				PoolVector<float> values = p_value;
 				int vcount = values.size();
-				ERR_FAIL_COND_V(vcount % 12, false); // shuld be multiple of 11
+				ERR_FAIL_COND_V(vcount % 12, false); // should be multiple of 11
 
 				PoolVector<float>::Read r = values.read();
 
@@ -403,7 +403,7 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 					w[idx++] = scale.z;
 				}
 
-				w = PoolVector<real_t>::Write();
+				w.release();
 				r_ret = keys;
 				return true;
 
@@ -438,8 +438,8 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 					idx++;
 				}
 
-				wti = PoolVector<float>::Write();
-				wtr = PoolVector<float>::Write();
+				wti.release();
+				wtr.release();
 
 				d["times"] = key_times;
 				d["transitions"] = key_transitions;
@@ -478,8 +478,8 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 					idx++;
 				}
 
-				wti = PoolVector<float>::Write();
-				wtr = PoolVector<float>::Write();
+				wti.release();
+				wtr.release();
 
 				d["times"] = key_times;
 				d["transitions"] = key_transitions;
@@ -523,8 +523,8 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 					idx++;
 				}
 
-				wti = PoolVector<float>::Write();
-				wpo = PoolVector<float>::Write();
+				wti.release();
+				wpo.release();
 
 				d["times"] = key_times;
 				d["points"] = key_points;
@@ -562,7 +562,7 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 					idx++;
 				}
 
-				wti = PoolVector<float>::Write();
+				wti.release();
 
 				d["times"] = key_times;
 				d["clips"] = clips;
@@ -595,8 +595,8 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 					wcl[i] = vls[i].value;
 				}
 
-				wti = PoolVector<float>::Write();
-				wcl = PoolVector<String>::Write();
+				wti.release();
+				wcl.release();
 
 				d["times"] = key_times;
 				d["clips"] = clips;
@@ -1425,7 +1425,9 @@ void Animation::track_set_key_value(int p_track, int p_key_idx, const Variant &p
 
 			TransformTrack *tt = static_cast<TransformTrack *>(t);
 			ERR_FAIL_INDEX(p_key_idx, tt->transforms.size());
+
 			Dictionary d = p_value;
+
 			if (d.has("location"))
 				tt->transforms.write[p_key_idx].value.loc = d["location"];
 			if (d.has("rotation"))
@@ -1438,6 +1440,7 @@ void Animation::track_set_key_value(int p_track, int p_key_idx, const Variant &p
 
 			ValueTrack *vt = static_cast<ValueTrack *>(t);
 			ERR_FAIL_INDEX(p_key_idx, vt->values.size());
+
 			vt->values.write[p_key_idx].value = p_value;
 
 		} break;
@@ -1445,11 +1448,14 @@ void Animation::track_set_key_value(int p_track, int p_key_idx, const Variant &p
 
 			MethodTrack *mt = static_cast<MethodTrack *>(t);
 			ERR_FAIL_INDEX(p_key_idx, mt->methods.size());
+
 			Dictionary d = p_value;
+
 			if (d.has("method"))
 				mt->methods.write[p_key_idx].method = d["method"];
 			if (d.has("args"))
 				mt->methods.write[p_key_idx].params = d["args"];
+
 		} break;
 		case TYPE_BEZIER: {
 
@@ -1469,6 +1475,7 @@ void Animation::track_set_key_value(int p_track, int p_key_idx, const Variant &p
 		case TYPE_AUDIO: {
 
 			AudioTrack *at = static_cast<AudioTrack *>(t);
+			ERR_FAIL_INDEX(p_key_idx, at->values.size());
 
 			Dictionary k = p_value;
 			ERR_FAIL_COND(!k.has("start_offset"));
@@ -1483,6 +1490,7 @@ void Animation::track_set_key_value(int p_track, int p_key_idx, const Variant &p
 		case TYPE_ANIMATION: {
 
 			AnimationTrack *at = static_cast<AnimationTrack *>(t);
+			ERR_FAIL_INDEX(p_key_idx, at->values.size());
 
 			at->values.write[p_key_idx].value = p_value;
 

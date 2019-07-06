@@ -398,6 +398,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 
 	theme->set_color("font_color", "LineEdit", control_font_color);
 	theme->set_color("font_color_selected", "LineEdit", Color(0, 0, 0));
+	theme->set_color("font_color_uneditable", "LineEdit", Color(control_font_color.r, control_font_color.g, control_font_color.b, 0.5f));
 	theme->set_color("cursor_color", "LineEdit", control_font_color_hover);
 	theme->set_color("selection_color", "LineEdit", font_color_selection);
 	theme->set_color("clear_button_color", "LineEdit", control_font_color);
@@ -439,6 +440,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_color("completion_font_color", "TextEdit", Color::html("aaaaaa"));
 	theme->set_color("font_color", "TextEdit", control_font_color);
 	theme->set_color("font_color_selected", "TextEdit", Color(0, 0, 0));
+	theme->set_color("font_color_readonly", "TextEdit", Color(control_font_color.r, control_font_color.g, control_font_color.b, 0.5f));
 	theme->set_color("selection_color", "TextEdit", font_color_selection);
 	theme->set_color("mark_color", "TextEdit", Color(1.0, 0.4, 0.4, 0.4));
 	theme->set_color("bookmark_color", "TextEdit", Color(0.08, 0.49, 0.98));
@@ -541,8 +543,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 
 	// File Dialog
 
-	theme->set_icon("reload", "FileDialog", make_icon(icon_reload_png));
 	theme->set_icon("parent_folder", "FileDialog", make_icon(icon_parent_folder_png));
+	theme->set_icon("reload", "FileDialog", make_icon(icon_reload_png));
+	theme->set_icon("toggle_hidden", "FileDialog", make_icon(icon_visibility_png));
 
 	// Popup
 
@@ -582,14 +585,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 
 	// GraphNode
 
-	Ref<StyleBoxTexture> graphsb = make_stylebox(graph_node_png, 6, 24, 6, 5, 16, 24, 16, 5);
-	Ref<StyleBoxTexture> graphsbcomment = make_stylebox(graph_node_comment_png, 6, 24, 6, 5, 16, 24, 16, 5);
-	Ref<StyleBoxTexture> graphsbcommentselected = make_stylebox(graph_node_comment_focus_png, 6, 24, 6, 5, 16, 24, 16, 5);
-	Ref<StyleBoxTexture> graphsbselected = make_stylebox(graph_node_selected_png, 6, 24, 6, 5, 16, 24, 16, 5);
+	Ref<StyleBoxTexture> graphsb = make_stylebox(graph_node_png, 6, 24, 6, 5, 16, 24, 16, 6);
+	Ref<StyleBoxTexture> graphsbcomment = make_stylebox(graph_node_comment_png, 6, 24, 6, 5, 16, 24, 16, 6);
+	Ref<StyleBoxTexture> graphsbcommentselected = make_stylebox(graph_node_comment_focus_png, 6, 24, 6, 5, 16, 24, 16, 6);
+	Ref<StyleBoxTexture> graphsbselected = make_stylebox(graph_node_selected_png, 6, 24, 6, 5, 16, 24, 16, 6);
 	Ref<StyleBoxTexture> graphsbdefault = make_stylebox(graph_node_default_png, 4, 4, 4, 4, 6, 4, 4, 4);
 	Ref<StyleBoxTexture> graphsbdeffocus = make_stylebox(graph_node_default_focus_png, 4, 4, 4, 4, 6, 4, 4, 4);
-	Ref<StyleBoxTexture> graph_bpoint = make_stylebox(graph_node_breakpoint_png, 6, 24, 6, 5, 16, 24, 16, 5);
-	Ref<StyleBoxTexture> graph_position = make_stylebox(graph_node_position_png, 6, 24, 6, 5, 16, 24, 16, 5);
+	Ref<StyleBoxTexture> graph_bpoint = make_stylebox(graph_node_breakpoint_png, 6, 24, 6, 5, 16, 24, 16, 6);
+	Ref<StyleBoxTexture> graph_position = make_stylebox(graph_node_position_png, 6, 24, 6, 5, 16, 24, 16, 6);
 
 	//graphsb->set_expand_margin_size(MARGIN_LEFT,10);
 	//graphsb->set_expand_margin_size(MARGIN_RIGHT,10);
@@ -850,8 +853,6 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_color("activity", "GraphEdit", Color(1, 1, 1));
 	theme->set_constant("bezier_len_pos", "GraphEdit", 80 * scale);
 	theme->set_constant("bezier_len_neg", "GraphEdit", 160 * scale);
-
-	theme->set_icon("logo", "Icons", make_icon(logo_png));
 
 	// Visual Node Ports
 	theme->set_constant("port_grab_distance_horizontal", "GraphEdit", 48 * scale);

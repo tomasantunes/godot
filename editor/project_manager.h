@@ -110,6 +110,7 @@ class ProjectManager : public Control {
 
 	void _install_project(const String &p_zip_path, const String &p_title);
 
+	void _dim_window();
 	void _panel_draw(Node *p_hb);
 	void _panel_input(const Ref<InputEvent> &p_ev, Node *p_hb);
 	void _unhandled_input(const Ref<InputEvent> &p_ev);
@@ -130,17 +131,19 @@ class ProjectListFilter : public HBoxContainer {
 
 	GDCLASS(ProjectListFilter, HBoxContainer);
 
+public:
+	enum FilterOption {
+		FILTER_NAME,
+		FILTER_PATH,
+		FILTER_MODIFIED,
+	};
+
 private:
 	friend class ProjectManager;
 
 	OptionButton *filter_option;
 	LineEdit *search_box;
 	bool has_search_box;
-
-	enum FilterOption {
-		FILTER_NAME,
-		FILTER_PATH,
-	};
 	FilterOption _current_filter;
 
 	void _search_text_changed(const String &p_newtext);

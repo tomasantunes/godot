@@ -39,7 +39,7 @@
 #include "scene/main/viewport.h"
 
 #ifdef TOOLS_ENABLED
-#include "editor/editor_node.h"
+#include "editor/editor_scale.h"
 #endif
 
 #include <limits.h>
@@ -318,7 +318,7 @@ void TreeItem::set_custom_draw(int p_column, Object *p_object, const StringName 
 
 void TreeItem::set_collapsed(bool p_collapsed) {
 
-	if (collapsed == p_collapsed)
+	if (collapsed == p_collapsed || !tree)
 		return;
 	collapsed = p_collapsed;
 	TreeItem *ci = tree->selected_item;
@@ -344,8 +344,7 @@ void TreeItem::set_collapsed(bool p_collapsed) {
 	}
 
 	_changed_notify();
-	if (tree)
-		tree->emit_signal("item_collapsed", this);
+	tree->emit_signal("item_collapsed", this);
 }
 
 bool TreeItem::is_collapsed() {
@@ -1129,6 +1128,8 @@ int Tree::draw_item(const Point2i &p_pos, const Point2 &p_draw_ofs, const Size2 
 			for (int j = p_item->cells[i].buttons.size() - 1; j >= 0; j--) {
 				Ref<Texture> b = p_item->cells[i].buttons[j].texture;
 				Size2 s = b->get_size() + cache.button_pressed->get_minimum_size();
+				if (s.height < label_h)
+					s.height = label_h;
 
 				Point2i o = Point2i(ofs + w - s.width, p_pos.y) - cache.offset + p_draw_ofs;
 
@@ -1929,8 +1930,6 @@ int Tree::propagate_mouse_event(const Point2i &p_pos, int x_ofs, int y_ofs, bool
 				edited_item = p_item;
 				edited_col = col;
 				bool on_arrow = x > col_width - cache.select_arrow->get_width();
-
-				bring_up_editor = false;
 
 				custom_popup_rect = Rect2i(get_global_position() + Point2i(col_ofs, _get_title_button_height() + y_ofs + item_h - cache.offset.y), Size2(get_column_width(col), item_h));
 
@@ -3164,10 +3163,7 @@ bool Tree::is_anything_selected() {
 
 void Tree::clear() {
 
-	if (blocked > 0) {
-
-		ERR_FAIL_COND(blocked > 0);
-	}
+	ERR_FAIL_COND(blocked > 0);
 
 	if (pressing_for_editor) {
 		if (range_drag_enabled) {
@@ -3532,14 +3528,14 @@ TreeItem *Tree::_search_item_text(TreeItem *p_at, const String &p_find, int *r_c
 
 TreeItem *Tree::search_item_text(const String &p_find, int *r_col, bool p_selectable) {
 
-	TreeItem *from = get_selected()->get_next_visible();
+	TreeItem *from = get_selected();
 
-	if (!root)
+	if (!from)
 		from = root;
 	if (!from)
 		return NULL;
 
-	return _search_item_text(from, p_find, r_col, p_selectable);
+	return _search_item_text(from->get_next_visible(true), p_find, r_col, p_selectable);
 }
 
 void Tree::_do_incr_search(const String &p_add) {
@@ -3721,6 +3717,10 @@ String Tree::get_tooltip(const Point2 &p_pos) const {
 
 			const TreeItem::Cell &c = it->cells[col];
 			int col_width = get_column_width(col);
+
+			for (int i = 0; i < col; i++)
+				pos.x -= get_column_width(i);
+
 			for (int j = c.buttons.size() - 1; j >= 0; j--) {
 				Ref<Texture> b = c.buttons[j].texture;
 				Size2 size = b->get_size() + cache.button_pressed->get_minimum_size();

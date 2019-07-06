@@ -32,6 +32,7 @@
 #include "core/bind/core_bind.h"
 #include "core/io/marshalls.h"
 #include "core/io/zip_io.h"
+#include "core/math/crypto_core.h"
 #include "core/object.h"
 #include "core/os/file_access.h"
 #include "core/project_settings.h"
@@ -42,8 +43,6 @@
 
 #include "thirdparty/minizip/unzip.h"
 #include "thirdparty/minizip/zip.h"
-#include "thirdparty/misc/base64.h"
-#include "thirdparty/misc/sha256.h"
 
 #include <zlib.h>
 
@@ -198,15 +197,12 @@ public:
 
 String AppxPackager::hash_block(const uint8_t *p_block_data, size_t p_block_len) {
 
-	char hash[32];
+	unsigned char hash[32];
 	char base64[45];
 
-	sha256_context ctx;
-	sha256_init(&ctx);
-	sha256_hash(&ctx, (uint8_t *)p_block_data, p_block_len);
-	sha256_done(&ctx, (uint8_t *)hash);
-
-	base64_encode(base64, hash, 32);
+	CryptoCore::sha256(p_block_data, p_block_len, hash);
+	size_t len = 0;
+	CryptoCore::b64_encode((unsigned char *)base64, 45, &len, (unsigned char *)hash, 32);
 	base64[44] = '\0';
 
 	return String(base64);
@@ -241,7 +237,6 @@ void AppxPackager::make_block_map() {
 
 	tmp_file->close();
 	memdelete(tmp_file);
-	tmp_file = NULL;
 }
 
 String AppxPackager::content_type(String p_extension) {
@@ -291,7 +286,6 @@ void AppxPackager::make_content_types() {
 
 	tmp_file->close();
 	memdelete(tmp_file);
-	tmp_file = NULL;
 }
 
 Vector<uint8_t> AppxPackager::make_file_header(FileMeta p_file_meta) {
@@ -606,7 +600,6 @@ void AppxPackager::finish() {
 
 	blockmap_file->close();
 	memdelete(blockmap_file);
-	blockmap_file = NULL;
 
 	// Add content types
 	EditorNode::progress_task_step("export", "Setting content types...", 5);
@@ -622,7 +615,6 @@ void AppxPackager::finish() {
 
 	types_file->close();
 	memdelete(types_file);
-	types_file = NULL;
 
 	// Pre-process central directory before signing
 	for (int i = 0; i < file_metadata.size(); i++) {

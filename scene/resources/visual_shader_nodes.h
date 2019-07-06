@@ -38,7 +38,7 @@
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarConstant : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarConstant, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarConstant, VisualShaderNode);
 	float constant;
 
 protected:
@@ -68,7 +68,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeBooleanConstant : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeBooleanConstant, VisualShaderNode)
+	GDCLASS(VisualShaderNodeBooleanConstant, VisualShaderNode);
 	bool constant;
 
 protected:
@@ -98,7 +98,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeColorConstant : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeColorConstant, VisualShaderNode)
+	GDCLASS(VisualShaderNodeColorConstant, VisualShaderNode);
 	Color constant;
 
 protected:
@@ -128,7 +128,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVec3Constant : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVec3Constant, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVec3Constant, VisualShaderNode);
 	Vector3 constant;
 
 protected:
@@ -158,7 +158,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformConstant : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTransformConstant, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTransformConstant, VisualShaderNode);
 	Transform constant;
 
 protected:
@@ -190,7 +190,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeTexture : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTexture, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTexture, VisualShaderNode);
 	Ref<Texture> texture;
 
 public:
@@ -198,7 +198,8 @@ public:
 		SOURCE_TEXTURE,
 		SOURCE_SCREEN,
 		SOURCE_2D_TEXTURE,
-		SOURCE_2D_NORMAL
+		SOURCE_2D_NORMAL,
+		SOURCE_DEPTH
 	};
 
 	enum TextureType {
@@ -251,7 +252,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeTexture::Source)
 ///////////////////////////////////////
 
 class VisualShaderNodeCubeMap : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeCubeMap, VisualShaderNode)
+	GDCLASS(VisualShaderNodeCubeMap, VisualShaderNode);
 	Ref<CubeMap> cube_map;
 
 public:
@@ -300,7 +301,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeCubeMap::TextureType)
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarOp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarOp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarOp, VisualShaderNode);
 
 public:
 	enum Operator {
@@ -345,7 +346,7 @@ public:
 VARIANT_ENUM_CAST(VisualShaderNodeScalarOp::Operator)
 
 class VisualShaderNodeVectorOp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorOp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorOp, VisualShaderNode);
 
 public:
 	enum Operator {
@@ -394,7 +395,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeVectorOp::Operator)
 ///////////////////////////////////////
 
 class VisualShaderNodeColorOp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeColorOp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeColorOp, VisualShaderNode);
 
 public:
 	enum Operator {
@@ -442,7 +443,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeColorOp::Operator)
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformMult : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTransformMult, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTransformMult, VisualShaderNode);
 
 public:
 	enum Operator {
@@ -485,7 +486,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeTransformMult::Operator)
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformVecMult : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTransformVecMult, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTransformVecMult, VisualShaderNode);
 
 public:
 	enum Operator {
@@ -528,7 +529,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeTransformVecMult::Operator)
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarFunc : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarFunc, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarFunc, VisualShaderNode);
 
 public:
 	enum Function {
@@ -599,7 +600,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeScalarFunc::Function)
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorFunc : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorFunc, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorFunc, VisualShaderNode);
 
 public:
 	enum Function {
@@ -673,7 +674,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeVectorFunc::Function)
 ///////////////////////////////////////
 
 class VisualShaderNodeColorFunc : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeColorFunc, VisualShaderNode)
+	GDCLASS(VisualShaderNodeColorFunc, VisualShaderNode);
 
 public:
 	enum Function {
@@ -699,7 +700,7 @@ public:
 
 	virtual String generate_code(Shader::Mode p_mode, VisualShader::Type p_type, int p_id, const String *p_input_vars, const String *p_output_vars, bool p_for_preview = false) const; //if no output is connected, the output var passed will be empty. if no input is connected and input is NIL, the input var passed will be empty
 
-	void set_function(Function p_op);
+	void set_function(Function p_func);
 	Function get_function() const;
 
 	virtual Vector<StringName> get_editable_properties() const;
@@ -714,7 +715,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeColorFunc::Function)
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformFunc : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTransformFunc, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTransformFunc, VisualShaderNode);
 
 public:
 	enum Function {
@@ -740,7 +741,7 @@ public:
 
 	virtual String generate_code(Shader::Mode p_mode, VisualShader::Type p_type, int p_id, const String *p_input_vars, const String *p_output_vars, bool p_for_preview = false) const; //if no output is connected, the output var passed will be empty. if no input is connected and input is NIL, the input var passed will be empty
 
-	void set_function(Function p_op);
+	void set_function(Function p_func);
 	Function get_function() const;
 
 	virtual Vector<StringName> get_editable_properties() const;
@@ -755,7 +756,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeTransformFunc::Function)
 ///////////////////////////////////////
 
 class VisualShaderNodeDotProduct : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeDotProduct, VisualShaderNode)
+	GDCLASS(VisualShaderNodeDotProduct, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -778,7 +779,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorLen : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorLen, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorLen, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -801,7 +802,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeDeterminant : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeDeterminant, VisualShaderNode)
+	GDCLASS(VisualShaderNodeDeterminant, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -824,7 +825,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarClamp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarClamp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarClamp, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -845,7 +846,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorClamp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorClamp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorClamp, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -868,7 +869,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarDerivativeFunc : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarDerivativeFunc, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarDerivativeFunc, VisualShaderNode);
 
 public:
 	enum Function {
@@ -895,7 +896,7 @@ public:
 
 	virtual String generate_code(Shader::Mode p_mode, VisualShader::Type p_type, int p_id, const String *p_input_vars, const String *p_output_vars, bool p_for_preview = false) const; //if no output is connected, the output var passed will be empty. if no input is connected and input is NIL, the input var passed will be empty
 
-	void set_function(Function p_op);
+	void set_function(Function p_func);
 	Function get_function() const;
 
 	virtual Vector<StringName> get_editable_properties() const;
@@ -908,7 +909,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeScalarDerivativeFunc::Function)
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorDerivativeFunc : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorDerivativeFunc, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorDerivativeFunc, VisualShaderNode);
 
 public:
 	enum Function {
@@ -935,7 +936,7 @@ public:
 
 	virtual String generate_code(Shader::Mode p_mode, VisualShader::Type p_type, int p_id, const String *p_input_vars, const String *p_output_vars, bool p_for_preview = false) const; //if no output is connected, the output var passed will be empty. if no input is connected and input is NIL, the input var passed will be empty
 
-	void set_function(Function p_op);
+	void set_function(Function p_func);
 	Function get_function() const;
 
 	virtual Vector<StringName> get_editable_properties() const;
@@ -950,7 +951,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeVectorDerivativeFunc::Function)
 ///////////////////////////////////////
 
 class VisualShaderNodeFaceForward : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeFaceForward, VisualShaderNode)
+	GDCLASS(VisualShaderNodeFaceForward, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -973,7 +974,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeOuterProduct : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeOuterProduct, VisualShaderNode)
+	GDCLASS(VisualShaderNodeOuterProduct, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -996,7 +997,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorScalarStep : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorScalarStep, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorScalarStep, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1019,7 +1020,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarSmoothStep : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarSmoothStep, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarSmoothStep, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1040,7 +1041,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorSmoothStep : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorSmoothStep, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorSmoothStep, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1061,7 +1062,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorScalarSmoothStep : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorScalarSmoothStep, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorScalarSmoothStep, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1084,7 +1085,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorDistance : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorDistance, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorDistance, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1107,7 +1108,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorRefract : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorRefract, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorRefract, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1130,7 +1131,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarInterp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeScalarInterp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeScalarInterp, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1151,7 +1152,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorInterp : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorInterp, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorInterp, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1174,7 +1175,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorCompose : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorCompose, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorCompose, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1195,7 +1196,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformCompose : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTransformCompose, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTransformCompose, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1218,7 +1219,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVectorDecompose : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeVectorDecompose, VisualShaderNode)
+	GDCLASS(VisualShaderNodeVectorDecompose, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1239,7 +1240,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformDecompose : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeTransformDecompose, VisualShaderNode)
+	GDCLASS(VisualShaderNodeTransformDecompose, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1262,7 +1263,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeScalarUniform : public VisualShaderNodeUniform {
-	GDCLASS(VisualShaderNodeScalarUniform, VisualShaderNodeUniform)
+	GDCLASS(VisualShaderNodeScalarUniform, VisualShaderNodeUniform);
 
 public:
 	virtual String get_caption() const;
@@ -1284,7 +1285,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeBooleanUniform : public VisualShaderNodeUniform {
-	GDCLASS(VisualShaderNodeBooleanUniform, VisualShaderNodeUniform)
+	GDCLASS(VisualShaderNodeBooleanUniform, VisualShaderNodeUniform);
 
 public:
 	virtual String get_caption() const;
@@ -1306,7 +1307,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeColorUniform : public VisualShaderNodeUniform {
-	GDCLASS(VisualShaderNodeColorUniform, VisualShaderNodeUniform)
+	GDCLASS(VisualShaderNodeColorUniform, VisualShaderNodeUniform);
 
 public:
 	virtual String get_caption() const;
@@ -1328,7 +1329,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeVec3Uniform : public VisualShaderNodeUniform {
-	GDCLASS(VisualShaderNodeVec3Uniform, VisualShaderNodeUniform)
+	GDCLASS(VisualShaderNodeVec3Uniform, VisualShaderNodeUniform);
 
 public:
 	virtual String get_caption() const;
@@ -1350,7 +1351,7 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeTransformUniform : public VisualShaderNodeUniform {
-	GDCLASS(VisualShaderNodeTransformUniform, VisualShaderNodeUniform)
+	GDCLASS(VisualShaderNodeTransformUniform, VisualShaderNodeUniform);
 
 public:
 	virtual String get_caption() const;
@@ -1372,7 +1373,8 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeTextureUniform : public VisualShaderNodeUniform {
-	GDCLASS(VisualShaderNodeTextureUniform, VisualShaderNodeUniform)
+	GDCLASS(VisualShaderNodeTextureUniform, VisualShaderNodeUniform);
+
 public:
 	enum TextureType {
 		TYPE_DATA,
@@ -1424,7 +1426,7 @@ VARIANT_ENUM_CAST(VisualShaderNodeTextureUniform::ColorDefault)
 ///////////////////////////////////////
 
 class VisualShaderNodeCubeMapUniform : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeCubeMapUniform, VisualShaderNode)
+	GDCLASS(VisualShaderNodeCubeMapUniform, VisualShaderNode);
 
 public:
 	virtual String get_caption() const;
@@ -1447,7 +1449,8 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeIf : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeIf, VisualShaderNode)
+	GDCLASS(VisualShaderNodeIf, VisualShaderNode);
+
 public:
 	virtual String get_caption() const;
 
@@ -1469,7 +1472,8 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeSwitch : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeSwitch, VisualShaderNode)
+	GDCLASS(VisualShaderNodeSwitch, VisualShaderNode);
+
 public:
 	virtual String get_caption() const;
 
@@ -1491,7 +1495,8 @@ public:
 ///////////////////////////////////////
 
 class VisualShaderNodeFresnel : public VisualShaderNode {
-	GDCLASS(VisualShaderNodeFresnel, VisualShaderNode)
+	GDCLASS(VisualShaderNodeFresnel, VisualShaderNode);
+
 public:
 	virtual String get_caption() const;
 
