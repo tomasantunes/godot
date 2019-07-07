@@ -39,6 +39,8 @@
 #include "editor_settings.h"
 #endif
 #include "scene/main/viewport.h"
+#include <stdio.h>
+#include <string>
 
 void ColorPicker::_notification(int p_what) {
 
@@ -247,15 +249,19 @@ void ColorPicker::_update_color(bool p_update_sliders) {
 }
 
 void ColorPicker::_update_presets() {
+	presetsPerRow = 10;
 	Size2 size = bt_add_preset->get_size();
-	Size2 preset_size = Size2(size.width * presets.size(), size.height);
+	Size2 preset_size = Size2(MIN(size.width * presets.size(), presetsPerRow * size.width), size.height * (Math::ceil((float)presets.size() / presetsPerRow)));
 	preset->set_custom_minimum_size(preset_size);
-
-	preset->draw_texture_rect(get_icon("preset_bg", "ColorPicker"), Rect2(Point2(), preset_size), true);
+	preset_container->set_custom_minimum_size(preset_size);
+	preset->draw_rect(Rect2(Point2(), preset_size), Color::named("transparent"));
 
 	for (int i = 0; i < presets.size(); i++) {
-		preset->draw_rect(Rect2(Point2(size.width * i, 0), size), presets[i]);
+		int x = (i % presetsPerRow) * size.width;
+  		int y = (Math::floor((float)i / presetsPerRow)) * size.height;
+		preset->draw_rect(Rect2(Point2(x, y), size), presets[i]);
 	}
+	_notification(NOTIFICATION_VISIBILITY_CHANGED);
 }
 
 void ColorPicker::_text_type_toggled() {
@@ -288,8 +294,6 @@ void ColorPicker::add_preset(const Color &p_color) {
 		presets.push_back(p_color);
 	}
 	preset->update();
-	if (presets.size() == 10)
-		bt_add_preset->hide();
 
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
@@ -535,7 +539,15 @@ void ColorPicker::_preset_input(const Ref<InputEvent> &p_event) {
 	if (bev.is_valid()) {
 
 		if (bev->is_pressed() && bev->get_button_index() == BUTTON_LEFT) {
-			int index = bev->get_position().x / (preset->get_size().x / presets.size());
+			
+			int index;
+			for (int i = 0; i < presets.size(); i++) {
+				int x = (i % presetsPerRow) * bt_add_preset->get_size().x;
+  				int y = (Math::floor((float)i / presetsPerRow)) * bt_add_preset->get_size().y;
+  				if (bev->get_position().x > x && bev->get_position().x < x + preset->get_size().x && bev->get_position().y > y && bev->get_position().y < y + preset->get_size().y) {
+  					index = i;
+  				}
+			}
 			set_pick_color(presets[index]);
 			_update_color();
 			emit_signal("color_changed", color);
@@ -841,6 +853,7 @@ ColorPicker::ColorPicker() :
 	add_child(preset_separator);
 
 	preset_container = memnew(HBoxContainer);
+	preset_container->set_h_size_flags(SIZE_EXPAND_FILL);
 	add_child(preset_container);
 
 	preset = memnew(TextureRect);
@@ -848,8 +861,11 @@ ColorPicker::ColorPicker() :
 	preset->connect("gui_input", this, "_preset_input");
 	preset->connect("draw", this, "_update_presets");
 
+	preset_container2 = memnew(HBoxContainer);
+	preset_container2->set_h_size_flags(SIZE_EXPAND_FILL);
+	add_child(preset_container2);
 	bt_add_preset = memnew(Button);
-	preset_container->add_child(bt_add_preset);
+	preset_container2->add_child(bt_add_preset);
 	bt_add_preset->set_tooltip(TTR("Add current color as a preset."));
 	bt_add_preset->connect("pressed", this, "_add_preset_pressed");
 }
