@@ -2516,8 +2516,6 @@ Error GDScriptLanguage::complete_code(const String &p_code, const String &p_path
 
 	const String quote_style = EDITOR_DEF("text_editor/completion/use_single_quotes", false) ? "'" : "\"";
 
-	const String quote_style = EDITOR_DEF("text_editor/completion/use_single_quotes", false) ? "'" : "\"";
-
 	GDScriptParser parser;
 
 	parser.parse(p_code, p_path.get_base_dir(), false, p_path, true);
