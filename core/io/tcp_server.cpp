@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2018 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2018 Godot Engine contributors (cf. AUTHORS.md)    */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -30,29 +30,104 @@
 
 #include "tcp_server.h"
 
-TCP_Server *(*TCP_Server::_create)() = NULL;
-
-Ref<TCP_Server> TCP_Server::create_ref() {
-
-	if (!_create)
-		return NULL;
-	return Ref<TCP_Server>(_create());
+void TCPServer::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("listen", "port", "bind_address"), &TCPServer::listen, DEFVAL("*"));
+	ClassDB::bind_method(D_METHOD("is_connection_available"), &TCPServer::is_connection_available);
+	ClassDB::bind_method(D_METHOD("is_listening"), &TCPServer::is_listening);
+	ClassDB::bind_method(D_METHOD("get_local_port"), &TCPServer::get_local_port);
+	ClassDB::bind_method(D_METHOD("take_connection"), &TCPServer::take_connection);
+	ClassDB::bind_method(D_METHOD("stop"), &TCPServer::stop);
 }
 
-TCP_Server *TCP_Server::create() {
+Error TCPServer::listen(uint16_t p_port, const IPAddress &p_bind_address) {
+	ERR_FAIL_COND_V(!_sock.is_valid(), ERR_UNAVAILABLE);
+	ERR_FAIL_COND_V(_sock->is_open(), ERR_ALREADY_IN_USE);
+	ERR_FAIL_COND_V(!p_bind_address.is_valid() && !p_bind_address.is_wildcard(), ERR_INVALID_PARAMETER);
+	ERR_FAIL_COND_V_MSG(p_port < 0 || p_port > 65535, ERR_INVALID_PARAMETER, "The local port number must be between 0 and 65535 (inclusive).");
 
-	if (!_create)
-		return NULL;
-	return _create();
+	Error err;
+	IP::Type ip_type = IP::TYPE_ANY;
+
+	// If the bind address is valid use its type as the socket type
+	if (p_bind_address.is_valid()) {
+		ip_type = p_bind_address.is_ipv4() ? IP::TYPE_IPV4 : IP::TYPE_IPV6;
+	}
+
+	err = _sock->open(NetSocket::TYPE_TCP, ip_type);
+
+	ERR_FAIL_COND_V(err != OK, ERR_CANT_CREATE);
+
+	_sock->set_blocking_enabled(false);
+	_sock->set_reuse_address_enabled(true);
+
+	err = _sock->bind(p_bind_address, p_port);
+
+	if (err != OK) {
+		_sock->close();
+		return ERR_ALREADY_IN_USE;
+	}
+
+	err = _sock->listen(MAX_PENDING_CONNECTIONS);
+
+	if (err != OK) {
+		_sock->close();
+		return FAILED;
+	}
+	return OK;
 }
 
-void TCP_Server::_bind_methods() {
-
-	ClassDB::bind_method(D_METHOD("listen", "port", "bind_address"), &TCP_Server::listen, DEFVAL("*"));
-	ClassDB::bind_method(D_METHOD("is_connection_available"), &TCP_Server::is_connection_available);
-	ClassDB::bind_method(D_METHOD("take_connection"), &TCP_Server::take_connection);
-	ClassDB::bind_method(D_METHOD("stop"), &TCP_Server::stop);
+int TCPServer::get_local_port() const {
+	uint16_t local_port;
+	_sock->get_socket_address(nullptr, &local_port);
+	return local_port;
 }
 
-TCP_Server::TCP_Server() {
+bool TCPServer::is_listening() const {
+	ERR_FAIL_COND_V(!_sock.is_valid(), false);
+
+	return _sock->is_open();
+}
+
+bool TCPServer::is_connection_available() const {
+	ERR_FAIL_COND_V(!_sock.is_valid(), false);
+
+	if (!_sock->is_open()) {
+		return false;
+	}
+
+	Error err = _sock->poll(NetSocket::POLL_TYPE_IN, 0);
+	return (err == OK);
+}
+
+Ref<StreamPeerTCP> TCPServer::take_connection() {
+	Ref<StreamPeerTCP> conn;
+	if (!is_connection_available()) {
+		return conn;
+	}
+
+	Ref<NetSocket> ns;
+	IPAddress ip;
+	uint16_t port = 0;
+	ns = _sock->accept(ip, port);
+	if (!ns.is_valid()) {
+		return conn;
+	}
+
+	conn = Ref<StreamPeerTCP>(memnew(StreamPeerTCP));
+	conn->accept_socket(ns, ip, port);
+	return conn;
+}
+
+void TCPServer::stop() {
+	if (_sock.is_valid()) {
+		_sock->close();
+	}
+}
+
+TCPServer::TCPServer() :
+		_sock(Ref<NetSocket>(NetSocket::create())) {
+}
+
+TCPServer::~TCPServer() {
+	stop();
 }

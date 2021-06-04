@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2018 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2018 Godot Engine contributors (cf. AUTHORS.md)    */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -31,14 +31,17 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "os/file_access.h"
-#include "ustring.h"
-#include "vector.h"
+#include "core/os/file_access.h"
+#include "core/string/ustring.h"
+#include "core/templates/vector.h"
+
 #include <stdarg.h>
 
 class Logger {
 protected:
 	bool should_log(bool p_err);
+
+	static bool _flush_stdout_on_print;
 
 public:
 	enum ErrorType {
@@ -48,23 +51,24 @@ public:
 		ERR_SHADER
 	};
 
-	virtual void logv(const char *p_format, va_list p_list, bool p_err) = 0;
+	static void set_flush_stdout_on_print(bool value);
+
+	virtual void logv(const char *p_format, va_list p_list, bool p_err) _PRINTF_FORMAT_ATTRIBUTE_2_0 = 0;
 	virtual void log_error(const char *p_function, const char *p_file, int p_line, const char *p_code, const char *p_rationale, ErrorType p_type = ERR_ERROR);
 
-	void logf(const char *p_format, ...);
-	void logf_error(const char *p_format, ...);
+	void logf(const char *p_format, ...) _PRINTF_FORMAT_ATTRIBUTE_2_3;
+	void logf_error(const char *p_format, ...) _PRINTF_FORMAT_ATTRIBUTE_2_3;
 
-	virtual ~Logger();
+	virtual ~Logger() {}
 };
 
 /**
  * Writes messages to stdout/stderr.
  */
 class StdLogger : public Logger {
-
 public:
-	virtual void logv(const char *p_format, va_list p_list, bool p_err);
-	virtual ~StdLogger();
+	virtual void logv(const char *p_format, va_list p_list, bool p_err) _PRINTF_FORMAT_ATTRIBUTE_2_0;
+	virtual ~StdLogger() {}
 };
 
 /**
@@ -77,7 +81,7 @@ class RotatedFileLogger : public Logger {
 	String base_path;
 	int max_files;
 
-	FileAccess *file;
+	FileAccess *file = nullptr;
 
 	void rotate_file_without_closing();
 	void close_file();
@@ -87,7 +91,7 @@ class RotatedFileLogger : public Logger {
 public:
 	RotatedFileLogger(const String &p_base_path, int p_max_files = 10);
 
-	virtual void logv(const char *p_format, va_list p_list, bool p_err);
+	virtual void logv(const char *p_format, va_list p_list, bool p_err) _PRINTF_FORMAT_ATTRIBUTE_2_0;
 
 	virtual ~RotatedFileLogger();
 };
@@ -98,7 +102,7 @@ class CompositeLogger : public Logger {
 public:
 	CompositeLogger(Vector<Logger *> p_loggers);
 
-	virtual void logv(const char *p_format, va_list p_list, bool p_err);
+	virtual void logv(const char *p_format, va_list p_list, bool p_err) _PRINTF_FORMAT_ATTRIBUTE_2_0;
 	virtual void log_error(const char *p_function, const char *p_file, int p_line, const char *p_code, const char *p_rationale, ErrorType p_type = ERR_ERROR);
 
 	void add_logger(Logger *p_logger);
@@ -106,4 +110,4 @@ public:
 	virtual ~CompositeLogger();
 };
 
-#endif
+#endif // LOGGER_H

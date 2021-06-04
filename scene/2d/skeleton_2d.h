@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2018 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2018 Godot Engine contributors (cf. AUTHORS.md)    */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -36,16 +36,19 @@
 class Skeleton2D;
 
 class Bone2D : public Node2D {
-	GDCLASS(Bone2D, Node2D)
+	GDCLASS(Bone2D, Node2D);
 
 	friend class Skeleton2D;
+#ifdef TOOLS_ENABLED
+	friend class AnimatedValuesBackup;
+#endif
 
-	Bone2D *parent_bone;
-	Skeleton2D *skeleton;
+	Bone2D *parent_bone = nullptr;
+	Skeleton2D *skeleton = nullptr;
 	Transform2D rest;
-	float default_length;
+	real_t default_length = 16.0;
 
-	int skeleton_index;
+	int skeleton_index = -1;
 
 protected:
 	void _notification(int p_what);
@@ -57,10 +60,10 @@ public:
 	void apply_rest();
 	Transform2D get_skeleton_rest() const;
 
-	String get_configuration_warning() const;
+	TypedArray<String> get_configuration_warnings() const override;
 
-	void set_default_length(float p_length);
-	float get_default_length() const;
+	void set_default_length(real_t p_length);
+	real_t get_default_length() const;
 
 	int get_index_in_skeleton() const;
 
@@ -71,24 +74,27 @@ class Skeleton2D : public Node2D {
 	GDCLASS(Skeleton2D, Node2D);
 
 	friend class Bone2D;
+#ifdef TOOLS_ENABLED
+	friend class AnimatedValuesBackup;
+#endif
 
 	struct Bone {
 		bool operator<(const Bone &p_bone) const {
 			return p_bone.bone->is_greater_than(bone);
 		}
-		Bone2D *bone;
-		int parent_index;
+		Bone2D *bone = nullptr;
+		int parent_index = 0;
 		Transform2D accum_transform;
 		Transform2D rest_inverse;
 	};
 
 	Vector<Bone> bones;
 
-	bool bone_setup_dirty;
+	bool bone_setup_dirty = true;
 	void _make_bone_setup_dirty();
 	void _update_bone_setup();
 
-	bool transform_dirty;
+	bool transform_dirty = true;
 	void _make_transform_dirty();
 	void _update_transform();
 
