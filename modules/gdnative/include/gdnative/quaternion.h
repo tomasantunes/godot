@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  y_sort.h                                                             */
+/*  quaternion.h                                                         */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,20 +28,33 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef Y_SORT_H
-#define Y_SORT_H
+#ifndef GODOT_QUATERNION_H
+#define GODOT_QUATERNION_H
 
-#include "scene/2d/node_2d.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class YSort : public Node2D {
-	GDCLASS(YSort, Node2D);
-	bool sort_enabled = true;
-	static void _bind_methods();
+#include <gdnative/math_defs.h>
 
-public:
-	void set_sort_enabled(bool p_enabled);
-	bool is_sort_enabled() const;
-	YSort();
-};
+#define GODOT_QUATERNION_SIZE (sizeof(godot_real_t) * 4)
 
-#endif // Y_SORT_H
+#ifndef GODOT_CORE_API_GODOT_QUATERNION_TYPE_DEFINED
+#define GODOT_CORE_API_GODOT_QUATERNION_TYPE_DEFINED
+typedef struct {
+	uint8_t _dont_touch_that[GODOT_QUATERNION_SIZE];
+} godot_quaternion;
+#endif
+
+#include <gdnative/gdnative.h>
+
+void GDAPI godot_quaternion_new(godot_quaternion *p_self);
+void GDAPI godot_quaternion_new_copy(godot_quaternion *r_dest, const godot_quaternion *p_src);
+godot_real_t GDAPI *godot_quaternion_operator_index(godot_quaternion *p_self, godot_int p_index);
+const godot_real_t GDAPI *godot_quaternion_operator_index_const(const godot_quaternion *p_self, godot_int p_index);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // GODOT_QUATERNION_H

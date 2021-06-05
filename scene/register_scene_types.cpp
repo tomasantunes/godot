@@ -65,7 +65,6 @@
 #include "scene/2d/tile_map.h"
 #include "scene/2d/touch_screen_button.h"
 #include "scene/2d/visibility_notifier_2d.h"
-#include "scene/2d/y_sort.h"
 #include "scene/animation/animation_blend_space_1d.h"
 #include "scene/animation/animation_blend_space_2d.h"
 #include "scene/animation/animation_blend_tree.h"
@@ -482,7 +481,7 @@ void register_scene_types() {
 	ClassDB::register_class<StaticBody3D>();
 	ClassDB::register_class<RigidBody3D>();
 	ClassDB::register_class<KinematicCollision3D>();
-	ClassDB::register_class<KinematicBody3D>();
+	ClassDB::register_class<CharacterBody3D>();
 	ClassDB::register_class<SpringArm3D>();
 
 	ClassDB::register_class<PhysicalBone3D>();
@@ -627,7 +626,7 @@ void register_scene_types() {
 	ClassDB::register_virtual_class<PhysicsBody2D>();
 	ClassDB::register_class<StaticBody2D>();
 	ClassDB::register_class<RigidBody2D>();
-	ClassDB::register_class<KinematicBody2D>();
+	ClassDB::register_class<CharacterBody2D>();
 	ClassDB::register_class<KinematicCollision2D>();
 	ClassDB::register_class<Area2D>();
 	ClassDB::register_class<CollisionShape2D>();
@@ -643,7 +642,6 @@ void register_scene_types() {
 	ClassDB::register_class<DirectionalLight2D>();
 	ClassDB::register_class<LightOccluder2D>();
 	ClassDB::register_class<OccluderPolygon2D>();
-	ClassDB::register_class<YSort>();
 	ClassDB::register_class<BackBufferCopy>();
 
 	OS::get_singleton()->yield(); //may take time to init
@@ -820,6 +818,7 @@ void register_scene_types() {
 	ClassDB::add_compatibility_class("ToolButton", "Button");
 	ClassDB::add_compatibility_class("Navigation3D", "Node3D");
 	ClassDB::add_compatibility_class("Navigation2D", "Node2D");
+	ClassDB::add_compatibility_class("YSort", "Node2D");
 
 	// Renamed in 4.0.
 	// Keep alphabetical ordering to easily locate classes and avoid duplicates.
@@ -865,7 +864,8 @@ void register_scene_types() {
 	ClassDB::add_compatibility_class("HingeJoint", "HingeJoint3D");
 	ClassDB::add_compatibility_class("ImmediateGeometry", "ImmediateGeometry3D");
 	ClassDB::add_compatibility_class("Joint", "Joint3D");
-	ClassDB::add_compatibility_class("KinematicBody", "KinematicBody3D");
+	ClassDB::add_compatibility_class("KinematicBody", "CharacterBody3D");
+	ClassDB::add_compatibility_class("KinematicBody2D", "CharacterBody2D");
 	ClassDB::add_compatibility_class("KinematicCollision", "KinematicCollision3D");
 	ClassDB::add_compatibility_class("Light", "Light3D");
 	ClassDB::add_compatibility_class("Listener", "Listener3D");
